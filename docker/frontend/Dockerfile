@@ -6,7 +6,7 @@ WORKDIR /app
 # Install deps at runtime to ensure host changes are picked up; alternatively we can use multi-stage
 COPY package.json package-lock.json* ./
 
-# Install production and dev deps for build
+# Install production and dev deps for build (using npm install to avoid cache issues)
 RUN npm install --no-cache
 
 # Copy source
