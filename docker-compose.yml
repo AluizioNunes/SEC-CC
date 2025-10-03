@@ -96,6 +96,7 @@ services:
       N8N_DIAGNOSTICS_ENABLED: ${N8N_DIAGNOSTICS_ENABLED}
       EXECUTIONS_MODE: ${N8N_EXECUTIONS_MODE}
     ports:
+      - "5678:5678"
     networks:
       - sec_net
 
