@@ -6,7 +6,6 @@ services:
       - "80:80"
     # depends_on:
     #   - frontend
-      - nestjs
       - grafana
       - n8n
     volumes:
@@ -29,20 +28,20 @@ services:
   #   networks:
   #     - sec_net
 
-  nestjs:
-    build:
-      context: ./Backend/NestJS
-      dockerfile: Dockerfile
-    environment:
-      PORT: ${NESTJS_PORT:-3000}
-      POSTGRES_URL: ${POSTGRES_URL}
-      MONGODB_URL: ${MONGODB_URL}
-      REDIS_URL: ${REDIS_URL}
-      RABBITMQ_URL: ${RABBITMQ_URL}
-    ports:
-      - "3000:3000"
-    networks:
-      - sec_net
+  # nestjs:
+  #   build:
+  #     context: ./Backend/NestJS
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     PORT: ${NESTJS_PORT:-3000}
+  #     POSTGRES_URL: ${POSTGRES_URL}
+  #     MONGODB_URL: ${MONGODB_URL}
+  #     REDIS_URL: ${REDIS_URL}
+  #     RABBITMQ_URL: ${RABBITMQ_URL}
+  #   ports:
+  #     - "3000:3000"
+  #   networks:
+  #     - sec_net
 
   postgres:
     image: postgres:16-alpine
