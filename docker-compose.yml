@@ -29,11 +29,6 @@ services:
       - "8000:8000"
     networks:
       - sec_net
-    depends_on:
-      - postgres
-      - mongodb
-      - redis
-      - rabbitmq
 
   nestjs:
     build:
@@ -49,11 +44,6 @@ services:
       - "3000:3000"
     networks:
       - sec_net
-    depends_on:
-      - postgres
-      - mongodb
-      - redis
-      - rabbitmq
 
   postgres:
     image: postgres:16-alpine
@@ -106,17 +96,11 @@ services:
       N8N_DIAGNOSTICS_ENABLED: ${N8N_DIAGNOSTICS_ENABLED}
       EXECUTIONS_MODE: ${N8N_EXECUTIONS_MODE}
     ports:
-      - "5678:5678"
     networks:
       - sec_net
-    depends_on:
-      - postgres
-      - mongodb
-      - redis
 
   prometheus:
     image: prom/prometheus:latest
-    container_name: sec-prometheus
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
@@ -126,18 +110,12 @@ services:
 
   loki:
     image: grafana/loki:2.9.8
-    container_name: sec-loki
     command: ["-config.file=/etc/loki/config.yml"]
     volumes:
       - ./docker/loki/loki-config.yml:/etc/loki/config.yml:ro
-    ports:
-      - "3100:3100"
-    networks:
-      - sec_net
 
   promtail:
     image: grafana/promtail:2.9.8
-    container_name: sec-promtail
     command: ["-config.file=/etc/promtail/config.yml"]
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
@@ -145,12 +123,9 @@ services:
       - ./docker/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
     networks:
       - sec_net
-    depends_on:
-      - loki
 
   grafana:
     image: grafana/grafana:latest
-    container_name: sec-grafana
     ports:
       - "3001:3000"
     environment:
@@ -158,17 +133,12 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - ./docker/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
-    networks:
       - sec_net
-    depends_on:
-      - prometheus
-      - loki
 
   # frontend:
   #   build:
   #     context: .
   #     dockerfile: ./docker/frontend/Dockerfile
-  #   container_name: sec-frontend-builder
   #   volumes:
   #     - frontend_dist:/app/dist
   #   networks:
