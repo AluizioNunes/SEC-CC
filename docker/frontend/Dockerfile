@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 
 # Install production and dev deps for build
-RUN npm ci
+RUN npm install --no-cache
 
 # Copy source
 COPY . .
