@@ -1,0 +1,192 @@
+version: "3.9"
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: sec-nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - fastapi
+      - nestjs
+      - grafana
+      - n8n
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - frontend_dist:/usr/share/nginx/html:ro
+    networks:
+      - sec_net
+
+  fastapi:
+    build:
+      context: ./Backend/FastAPI
+      dockerfile: Dockerfile
+    container_name: sec-fastapi
+    environment:
+      POSTGRES_URL: ${POSTGRES_URL}
+      MONGODB_URL: ${MONGODB_URL}
+      REDIS_URL: ${REDIS_URL}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      LOG_LEVEL: ${FASTAPI_LOG_LEVEL}
+    ports:
+      - "8000:8000"
+    networks:
+      - sec_net
+    depends_on:
+      - postgres
+      - mongodb
+      - redis
+      - rabbitmq
+
+  nestjs:
+    build:
+      context: ./Backend/NestJS
+      dockerfile: Dockerfile
+    container_name: sec-nestjs
+    environment:
+      PORT: ${NESTJS_PORT}
+      POSTGRES_URL: ${POSTGRES_URL}
+      MONGODB_URL: ${MONGODB_URL}
+      REDIS_URL: ${REDIS_URL}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+    ports:
+      - "3000:3000"
+    networks:
+      - sec_net
+    depends_on:
+      - postgres
+      - mongodb
+      - redis
+      - rabbitmq
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: sec-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - sec_net
+
+  mongodb:
+    image: mongo:7
+    container_name: sec-mongodb
+    environment:
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - sec_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: sec-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - sec_net
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: sec-rabbitmq
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    networks:
+      - sec_net
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: sec-n8n
+    environment:
+      N8N_HOST: ${N8N_HOST}
+      N8N_PORT: ${N8N_PORT}
+      N8N_PROTOCOL: ${N8N_PROTOCOL}
+      N8N_BASE_URL: ${N8N_BASE_URL}
+      N8N_DIAGNOSTICS_ENABLED: ${N8N_DIAGNOSTICS_ENABLED}
+      EXECUTIONS_MODE: ${N8N_EXECUTIONS_MODE}
+    ports:
+      - "5678:5678"
+    networks:
+      - sec_net
+    depends_on:
+      - postgres
+      - mongodb
+      - redis
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: sec-prometheus
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - sec_net
+
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: sec-loki
+    command: ["-config.file=/etc/loki/config.yml"]
+    volumes:
+      - ./docker/loki/loki-config.yml:/etc/loki/config.yml:ro
+    ports:
+      - "3100:3100"
+    networks:
+      - sec_net
+
+  promtail:
+    image: grafana/promtail:2.9.8
+    container_name: sec-promtail
+    command: ["-config.file=/etc/promtail/config.yml"]
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+    networks:
+      - sec_net
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: sec-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./docker/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - sec_net
+    depends_on:
+      - prometheus
+      - loki
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./docker/frontend/Dockerfile
+    container_name: sec-frontend-builder
+    volumes:
+      - frontend_dist:/app/dist
+    networks:
+      - sec_net
+
+volumes:
+  postgres_data:
+  mongo_data:
+  frontend_dist:
+
+networks:
+  sec_net:
+    driver: bridge
