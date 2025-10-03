@@ -1,5 +1,5 @@
 # Frontend builder that outputs Vite build to /app/dist (shared via named volume)
-FROM node:22-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 
 # Install production and dev deps for build (using npm install to avoid cache issues)
-RUN npm install --no-cache
+RUN npm install
 
 # Copy source
 COPY . .
