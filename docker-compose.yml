@@ -20,3 +20,6 @@ services:
 networks:
   sec_net:
     driver: bridge
+
+volumes:
+  frontend_dist:
