@@ -1,8 +1,19 @@
 services:
   nginx:
     image: nginx:alpine
+    container_name: SEC-CC NGINX
     ports:
       - "80:80"
+    networks:
+      - sec_net
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./docker/frontend/Dockerfile
+    container_name: SEC-CC FRONTEND
+    volumes:
+      - frontend_dist:/app/dist
     networks:
       - sec_net
 
