@@ -1,18 +1,15 @@
 services:
-  nginx:
-    image: nginx:latest
-    container_name: sec-nginx
-    ports:
-      - "80:80"
-    # depends_on:
-    #   - frontend
-    volumes:
-      - type: bind
-        source: ./docker/nginx/nginx.conf
-        target: /etc/nginx/nginx.conf
-        read_only: true
-    networks:
-      - sec_net
+  # nginx:
+  #   image: nginx:latest
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - type: bind
+  #       source: ./docker/nginx/nginx.conf
+  #       target: /etc/nginx/nginx.conf
+  #       read_only: true
+  #   networks:
+  #     - sec_net
 
   # fastapi:
   #   build:
@@ -45,8 +42,7 @@ services:
   #     - sec_net
 
   postgres:
-    image: postgres:16-alpine
-    container_name: sec-postgres
+    image: postgres:17.6-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -58,32 +54,24 @@ services:
     networks:
       - sec_net
 
-  mongodb:
-    image: mongo:7
-    container_name: sec-mongodb
-    environment:
-      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
-    volumes:
-      - mongo_data:/data/db
-    ports:
-      - "27017:27017"
-    networks:
-      - sec_net
+  # mongodb:
+  #   image: mongo:7.0-jammy
+  #   environment:
+  #     MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+  #   volumes:
+  #     - mongo_data:/data/db
+  #   ports:
+  #     - "27017:27017"
+  #   networks:
+  #     - sec_net
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    networks:
-      - sec_net
-
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    ports:
-      - "5672:5672"   # AMQP
-      - "15672:15672" # Management UI
-    networks:
-      - sec_net
+  # rabbitmq:
+  #   image: rabbitmq:3-management-alpine
+  #   ports:
+  #     - "5672:5672"   # AMQP
+  #     - "15672:15672" # Management UI
+  #   networks:
+  #     - sec_net
 
   # n8n:
   #   image: n8nio/n8n:latest
@@ -93,6 +81,7 @@ services:
   #     N8N_PROTOCOL: ${N8N_PROTOCOL}
   #     N8N_BASE_URL: ${N8N_BASE_URL}
   #     N8N_DIAGNOSTICS_ENABLED: ${N8N_DIAGNOSTICS_ENABLED}
+  #     EXECUTIONS_MODE: ${N8N_EXECUTIONS_MODE}
   #   ports:
   #     - "5678:5678"
   #   networks:
@@ -127,6 +116,8 @@ services:
   #   build:
   #     context: .
   #     dockerfile: ./docker/frontend/Dockerfile
+  #   volumes:
+  #     - frontend_dist:/app/dist
   #   networks:
   #     - sec_net
 
