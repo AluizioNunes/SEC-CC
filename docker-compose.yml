@@ -1,15 +1,15 @@
 services:
-  # nginx:
-  #   image: nginx:latest
-  #   ports:
-  #     - "80:80"
-  #   volumes:
-  #     - type: bind
-  #       source: ./docker/nginx/nginx.conf
-  #       target: /etc/nginx/nginx.conf
-  #       read_only: true
-  #   networks:
-  #     - sec_net
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - type: bind
+        source: ./docker/nginx/nginx.conf
+        target: /etc/nginx/nginx.conf
+        read_only: true
+    networks:
+      - sec_net
 
   # fastapi:
   #   build:
