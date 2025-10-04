@@ -17,6 +17,38 @@ services:
     networks:
       - sec_net
 
+  fastapi:
+    build:
+      context: ./Backend/FastAPI
+      dockerfile: Dockerfile
+    container_name: CC-FASTAPI
+    environment:
+      POSTGRES_URL: ${POSTGRES_URL}
+      MONGODB_URL: ${MONGODB_URL}
+      REDIS_URL: ${REDIS_URL}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      LOG_LEVEL: ${FASTAPI_LOG_LEVEL:-info}
+    ports:
+      - "8000:8000"
+    networks:
+      - sec_net
+
+  nestjs:
+    build:
+      context: ./Backend/NestJS
+      dockerfile: Dockerfile
+    container_name: CC-NESTJS
+    environment:
+      PORT: ${NESTJS_PORT:-3000}
+      POSTGRES_URL: ${POSTGRES_URL}
+      MONGODB_URL: ${MONGODB_URL}
+      REDIS_URL: ${REDIS_URL}
+      RABBITMQ_URL: ${RABBITMQ_URL}
+    ports:
+      - "3000:3000"
+    networks:
+      - sec_net
+
   postgres:
     image: postgres:17.6-alpine
     container_name: CC-POSTGRESQL
