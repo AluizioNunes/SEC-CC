@@ -17,9 +17,32 @@ services:
     networks:
       - sec_net
 
+  postgres:
+    image: postgres:17-alpine
+    container_name: CC-POSTGRESQL
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - sec_net
+
+  redis:
+    image: redis:latest
+    container_name: CC-REDIS
+    ports:
+      - "6379:6379"
+    networks:
+      - sec_net
+
 networks:
   sec_net:
     driver: bridge
 
 volumes:
   frontend_dist:
+  postgres_data:
