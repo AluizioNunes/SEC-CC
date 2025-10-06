@@ -1,48 +1,60 @@
 """
-Redis Advanced Features Package - Production Ready
-Complete Redis integration with all advanced features
+Redis Advanced Features Package - Ultra-Advanced Implementation
+Complete Redis integration with all advanced features for revolutionary applications
 """
 
 # Core Redis client
 from .client import get_redis_client, close_redis_connection, test_redis_connection
 
-# API Response Caching
+# Basic caching and operations
+from .cache import get_cache, set_cache, delete_cache, exists_cache
 from .api_cache import (
     APICacheManager, cache_response, api_cache_manager,
     get_cache_stats, invalidate_cache_by_tags, invalidate_cache_by_pattern
 )
 
-# Session Clustering (Multi-instance)
+# Session management
 from .session_cluster import SessionCluster, session_cluster
 
-# Distributed Rate Limiting
+# Rate limiting
 from .rate_limiter import DistributedRateLimiter, rate_limiter, RateLimitAlgorithm
 
-# Database Query Caching
+# Database integrations
 from .database_query_cache import DatabaseQueryCache, CachedDatabaseManager, db_cache_manager
-
-# PostgreSQL Integration
 from .postgres_cache import PostgreSQLCacheManager, postgres_cache_manager
-
-# MongoDB Integration
 from .mongodb_cache import MongoDBCacheManager, mongodb_cache_manager
 
-# RabbitMQ + Redis Hybrid
+# Message broker
 from .hybrid_broker import HybridMessageBroker, hybrid_broker, MessageBrokerType, MessagePriority
 
-# Redis Streams - Event Sourcing
+# Event sourcing and CQRS
 from .event_sourcing import EventSourcingManager, event_sourcing_manager, Event, EventType
+from .cqrs_manager import CQRSManager, cqrs_manager, Command, CommandStatus
 
-# Grafana Dashboard Caching
+# Machine Learning & AI
+from .machine_learning import RecommendationEngine, PredictiveAnalytics, recommendation_engine, predictive_analytics
+
+# Ultra-advanced features
+from .global_service_mesh import GlobalServiceMesh, RegionStatus, global_service_mesh
+from .ultra_ai_manager import UltraAIManager, AIModelType, ultra_ai_manager
+from .ultra_security import UltraSecurityManager, SecurityClassification, ThreatLevel, ultra_security_manager
+from .ultra_analytics import UltraAnalyticsEngine, AnalyticsScope, ultra_analytics_engine
+
+# Advanced Search
+from .advanced_search import AdvancedSearchEngine, search_engine
+
+# Service Mesh
+from .service_mesh import ServiceMesh, ServiceStatus, service_mesh
+
+# Monitoring integrations
 from .grafana_cache import GrafanaCacheManager, grafana_cache_manager
-
-# Prometheus Metrics Caching
 from .prometheus_cache import PrometheusCacheManager, prometheus_cache_manager
-
-# Loki Log Caching
 from .loki_cache import LokiCacheManager, loki_cache_manager
 
-# Advanced Data Structures
+# Message analytics
+from .message_analytics import MessageAnalytics, message_analytics
+
+# Advanced data structures
 from .data_structures import RedisDataStructures, redis_ds
 
 # Controllers and Middleware
@@ -57,6 +69,9 @@ from .middleware import (
 __all__ = [
     # Core
     "get_redis_client", "close_redis_connection", "test_redis_connection",
+
+    # Basic operations
+    "get_cache", "set_cache", "delete_cache", "exists_cache",
 
     # API Cache
     "APICacheManager", "cache_response", "api_cache_manager",
@@ -80,13 +95,32 @@ __all__ = [
     # Message Broker
     "HybridMessageBroker", "hybrid_broker", "MessageBrokerType", "MessagePriority",
 
-    # Event Sourcing
+    # Event Sourcing & CQRS
     "EventSourcingManager", "event_sourcing_manager", "Event", "EventType",
+    "CQRSManager", "cqrs_manager", "Command", "CommandStatus",
+
+    # Machine Learning & AI
+    "RecommendationEngine", "PredictiveAnalytics", "recommendation_engine", "predictive_analytics",
+
+    # Ultra-Advanced Features
+    "GlobalServiceMesh", "RegionStatus", "global_service_mesh",
+    "UltraAIManager", "AIModelType", "ultra_ai_manager",
+    "UltraSecurityManager", "SecurityClassification", "ThreatLevel", "ultra_security_manager",
+    "UltraAnalyticsEngine", "AnalyticsScope", "ultra_analytics_engine",
+
+    # Advanced Search
+    "AdvancedSearchEngine", "search_engine",
+
+    # Service Mesh
+    "ServiceMesh", "ServiceStatus", "service_mesh",
 
     # Monitoring Stack
     "GrafanaCacheManager", "grafana_cache_manager",
     "PrometheusCacheManager", "prometheus_cache_manager",
     "LokiCacheManager", "loki_cache_manager",
+
+    # Message Analytics
+    "MessageAnalytics", "message_analytics",
 
     # Data Structures
     "RedisDataStructures", "redis_ds",
