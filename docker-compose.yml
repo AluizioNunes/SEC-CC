@@ -42,14 +42,14 @@ services:
     container_name: CC-NESTJS
     environment:
       PORT: ${NESTJS_PORT:-3000}
-      POSTGRES_URL: ${POSTGRES_URL}
-      MONGODB_URL: ${MONGODB_URL}
-      REDIS_URL: ${REDIS_URL}
-      RABBITMQ_URL: ${RABBITMQ_URL}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT:-6379}
     ports:
       - "3000:3000"
     networks:
       - sec_net
+    depends_on:
+      - redis
 
   postgres:
     image: postgres:17.6-alpine

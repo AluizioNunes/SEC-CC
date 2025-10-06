@@ -1,9 +1,9 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import * as Redis from 'ioredis';
+import Redis from 'ioredis';
 
 @Injectable()
 export class RedisService implements OnModuleDestroy {
-  private client: Redis.Redis;
+  private client: Redis;
 
   constructor() {
     this.client = new Redis({
@@ -12,24 +12,23 @@ export class RedisService implements OnModuleDestroy {
     });
   }
 
-  getClient(): Redis.Redis {
-    return this.client;
-  }
-
   async onModuleDestroy() {
     await this.client.quit();
   }
 
-  // Basic operations
+  getClient(): Redis {
+    return this.client;
+  }
+
   async get(key: string): Promise<string | null> {
     return await this.client.get(key);
   }
 
-  async set(key: string, value: string, ttl?: number): Promise<void> {
+  async set(key: string, value: string, ttl?: number): Promise<string> {
     if (ttl) {
-      await this.client.setex(key, ttl, value);
+      return await this.client.setex(key, ttl, value);
     } else {
-      await this.client.set(key, value);
+      return await this.client.set(key, value);
     }
   }
 
@@ -39,5 +38,13 @@ export class RedisService implements OnModuleDestroy {
 
   async exists(key: string): Promise<boolean> {
     return (await this.client.exists(key)) > 0;
+  }
+
+  async expire(key: string, seconds: number): Promise<boolean> {
+    return await this.client.expire(key, seconds) === 1;
+  }
+
+  async ttl(key: string): Promise<number> {
+    return await this.client.ttl(key);
   }
 }
