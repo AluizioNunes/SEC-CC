@@ -156,557 +156,557 @@ services:
 
   # 🚀 NOVOS SERVIÇOS ULTRA-REVOLUCIONÁRIOS
 
-  # Blockchain Infrastructure
-  ethereum-node:
-    image: ethereum/client-go:latest
-    container_name: CC-ETHEREUM
-    ports:
-      - "8545:8545"
-      - "8546:8546"
-      - "30303:30303"
-    volumes:
-      - ethereum_data:/data
-    command: >
-      --datadir=/data
-      --http
-      --http.addr=0.0.0.0
-      --http.port=8545
-      --http.api=eth,net,web3,personal,admin
-      --ws
-      --ws.addr=0.0.0.0
-      --ws.port=8546
-      --ws.api=eth,net,web3
-      --syncmode=fast
-      --gcmode=archive
-      --mine
-      --miner.threads=1
-      --miner.etherbase=0x0000000000000000000000000000000000000000
-    networks:
-      - sec_net
+  # Blockchain Infrastructure (COMENTADO - Configure chaves API primeiro)
+  # ethereum-node:
+  #   image: ethereum/client-go:latest
+  #   container_name: CC-ETHEREUM
+  #   ports:
+  #     - "8545:8545"
+  #     - "8546:8546"
+  #     - "30303:30303"
+  #   volumes:
+  #     - ethereum_data:/data
+  #   command: >
+  #     --datadir=/data
+  #     --http
+  #     --http.addr=0.0.0.0
+  #     --http.port=8545
+  #     --http.api=eth,net,web3,personal,admin
+  #     --ws
+  #     --ws.addr=0.0.0.0
+  #     --ws.port=8546
+  #     --ws.api=eth,net,web3
+  #     --syncmode=fast
+  #     --gcmode=archive
+  #     --mine
+  #     --miner.threads=1
+  #     --miner.etherbase=0x0000000000000000000000000000000000000000
+  #   networks:
+  #     - sec_net
 
-  solana-node:
-    image: solana-labs/solana:latest
-    container_name: CC-SOLANA
-    ports:
-      - "8899:8899"
-      - "8900:8900"
-    volumes:
-      - solana_data:/data
-    command: >
-      validator
-      --identity=/data/validator-keypair.json
-      --vote-account=/data/vote-account-keypair.json
-      --ledger=/data/ledger
-      --rpc-port=8899
-      --gossip-port=8001
-      --entrypoint=entrypoint.mainnet-beta.solana.com:8001
-      --expected-genesis-hash=5eykt4UsFv8P8NJdTRELPpaPWWUyYKGtzWRvPZVNmN3c
-    networks:
-      - sec_net
+  # solana-node:
+  #   image: solana-labs/solana:latest
+  #   container_name: CC-SOLANA
+  #   ports:
+  #     - "8899:8899"
+  #     - "8900:8900"
+  #   volumes:
+  #     - solana_data:/data
+  #   command: >
+  #     validator
+  #     --identity=/data/validator-keypair.json
+  #     --vote-account=/data/vote-account-keypair.json
+  #     --ledger=/data/ledger
+  #     --rpc-port=8899
+  #     --gossip-port=8001
+  #     --entrypoint=entrypoint.mainnet-beta.solana.com:8001
+  #     --expected-genesis-hash=5eykt4UsFv8P8NJdTRELPpaPWWUyYKGtzWRvPZVNmN3c
+  #   networks:
+  #     - sec_net
 
-  aptos-node:
-    image: aptoslabs/validator:latest
-    container_name: CC-APTOS
-    ports:
-      - "8080:8080"
-      - "9101:9101"
-    volumes:
-      - aptos_data:/data
-    environment:
-      - APTOS_NODE_TYPE=validator
-      - APTOS_VALIDATOR_HOST=0.0.0.0:6180
-      - APTOS_API_PORT=8080
-    networks:
-      - sec_net
+  # aptos-node:
+  #   image: aptoslabs/validator:latest
+  #   container_name: CC-APTOS
+  #   ports:
+  #     - "8080:8080"
+  #     - "9101:9101"
+  #   volumes:
+  #     - aptos_data:/data
+  #   environment:
+  #     - APTOS_NODE_TYPE=validator
+  #     - APTOS_VALIDATOR_HOST=0.0.0.0:6180
+  #     - APTOS_API_PORT=8080
+  #   networks:
+  #     - sec_net
 
-  # AI/ML Infrastructure
-  tensorflow-serving:
-    image: tensorflow/serving:latest
-    container_name: CC-TENSORFLOW
-    ports:
-      - "8501:8501"
-    volumes:
-      - ./services/ai/models:/models
-    environment:
-      - MODEL_NAME=ultra_ai_model
-    command: >
-      --rest_api_port=8501
-      --model_name=ultra_ai_model
-      --model_base_path=/models/ultra_ai_model
-    networks:
-      - sec_net
+  # AI/ML Infrastructure (COMENTADO - Configure OpenAI API primeiro)
+  # tensorflow-serving:
+  #   image: tensorflow/serving:latest
+  #   container_name: CC-TENSORFLOW
+  #   ports:
+  #     - "8501:8501"
+  #   volumes:
+  #     - ./services/ai/models:/models
+  #   environment:
+  #     - MODEL_NAME=ultra_ai_model
+  #   command: >
+  #     --rest_api_port=8501
+  #     --model_name=ultra_ai_model
+  #     --model_base_path=/models/ultra_ai_model
+  #   networks:
+  #     - sec_net
 
-  openai-api-proxy:
-    build:
-      context: ./services/ai
-      dockerfile: Dockerfile
-    container_name: CC-OPENAI-PROXY
-    ports:
-      - "3001:3001"
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # openai-api-proxy:
+  #   build:
+  #     context: ./services/ai
+  #     dockerfile: Dockerfile
+  #   container_name: CC-OPENAI-PROXY
+  #   ports:
+  #     - "3001:3001"
+  #   environment:
+  #     - OPENAI_API_KEY=${OPENAI_API_KEY}
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Edge Computing Infrastructure
-  edge-orchestrator:
-    build:
-      context: ./services/edge
-      dockerfile: Dockerfile
-    container_name: CC-EDGE-ORCHESTRATOR
-    ports:
-      - "8082:8082"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - EDGE_NODES=${EDGE_NODES:-5}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Edge Computing Infrastructure (COMENTADO - Configure nós edge primeiro)
+  # edge-orchestrator:
+  #   build:
+  #     context: ./services/edge
+  #     dockerfile: Dockerfile
+  #   container_name: CC-EDGE-ORCHESTRATOR
+  #   ports:
+  #     - "8082:8082"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - EDGE_NODES=${EDGE_NODES:-5}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Metaverso Infrastructure
-  metaverso-server:
-    build:
-      context: ./services/metaverso
-      dockerfile: Dockerfile
-    container_name: CC-METAVERSO
-    ports:
-      - "8083:8083"
-      - "8084:8084"  # WebSocket
-    volumes:
-      - metaverso_assets:/app/assets
-      - metaverso_data:/app/data
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - MAX_USERS=${METAVERSO_MAX_USERS:-1000}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Metaverso Infrastructure (COMENTADO - Configure assets 3D primeiro)
+  # metaverso-server:
+  #   build:
+  #     context: ./services/metaverso
+  #     dockerfile: Dockerfile
+  #   container_name: CC-METAVERSO
+  #   ports:
+  #     - "8083:8083"
+  #     - "8084:8084"  # WebSocket
+  #   volumes:
+  #     - metaverso_assets:/app/assets
+  #     - metaverso_data:/app/data
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - MAX_USERS=${METAVERSO_MAX_USERS:-1000}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Quantum Security Infrastructure
-  quantum-security:
-    build:
-      context: ./services/quantum
-      dockerfile: Dockerfile
-    container_name: CC-QUANTUM-SECURITY
-    ports:
-      - "8085:8085"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - QUANTUM_KEY_SIZE=${QUANTUM_KEY_SIZE:-256}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Quantum Security Infrastructure (COMENTADO - Configure algoritmos quânticos primeiro)
+  # quantum-security:
+  #   build:
+  #     context: ./services/quantum
+  #     dockerfile: Dockerfile
+  #   container_name: CC-QUANTUM-SECURITY
+  #   ports:
+  #     - "8085:8085"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - QUANTUM_KEY_SIZE=${QUANTUM_KEY_SIZE:-256}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Business Revolution Infrastructure
-  business-intelligence:
-    build:
-      context: ./services/business
-      dockerfile: Dockerfile
-    container_name: CC-BUSINESS-INTELLIGENCE
-    ports:
-      - "8086:8086"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - BUSINESS_METRICS_DB=${BUSINESS_METRICS_DB:-business_metrics}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Business Revolution Infrastructure (COMENTADO - Configure modelos de negócio primeiro)
+  # business-intelligence:
+  #   build:
+  #     context: ./services/business
+  #     dockerfile: Dockerfile
+  #   container_name: CC-BUSINESS-INTELLIGENCE
+  #   ports:
+  #     - "8086:8086"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - BUSINESS_METRICS_DB=${BUSINESS_METRICS_DB:-business_metrics}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Global Load Balancer & CDN
-  global-load-balancer:
-    image: nginx:alpine
-    container_name: CC-GLOBAL-LB
-    ports:
-      - "443:443"
-      - "80:80"
-    volumes:
-      - ./docker/global-lb/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./docker/global-lb/ssl:/etc/nginx/ssl:ro
-    networks:
-      - sec_net
-    depends_on:
-      - nginx
+  # Global Load Balancer & CDN (COMENTADO - Configure domínio primeiro)
+  # global-load-balancer:
+  #   image: nginx:alpine
+  #   container_name: CC-GLOBAL-LB
+  #   ports:
+  #     - "443:443"
+  #     - "80:80"
+  #   volumes:
+  #     - ./docker/global-lb/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./docker/global-lb/ssl:/etc/nginx/ssl:ro
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - nginx
 
-  # Quantum Computing Simulation
-  quantum-simulator:
-    image: qiskit/quantum-simulator:latest
-    container_name: CC-QUANTUM-SIM
-    ports:
-      - "8087:8087"
-    environment:
-      - QUANTUM_BACKEND=ibmq_qasm_simulator
-      - IBMQ_TOKEN=${IBMQ_TOKEN}
-    networks:
-      - sec_net
+  # Quantum Computing Simulation (COMENTADO - Configure IBM Quantum primeiro)
+  # quantum-simulator:
+  #   image: qiskit/quantum-simulator:latest
+  #   container_name: CC-QUANTUM-SIM
+  #   ports:
+  #     - "8087:8087"
+  #   environment:
+  #     - QUANTUM_BACKEND=ibmq_qasm_simulator
+  #     - IBMQ_TOKEN=${IBMQ_TOKEN}
+  #   networks:
+  #     - sec_net
 
-  # Advanced Analytics Engine
-  analytics-engine:
-    build:
-      context: ./services/analytics
-      dockerfile: Dockerfile
-    container_name: CC-ANALYTICS-ENGINE
-    ports:
-      - "8088:8088"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - ANALYTICS_MODELS=${ANALYTICS_MODELS:-all}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Advanced Analytics Engine (COMENTADO - Configure modelos primeiro)
+  # analytics-engine:
+  #   build:
+  #     context: ./services/analytics
+  #     dockerfile: Dockerfile
+  #   container_name: CC-ANALYTICS-ENGINE
+  #   ports:
+  #     - "8088:8088"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - ANALYTICS_MODELS=${ANALYTICS_MODELS:-all}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Real-time Collaboration Platform
-  collaboration-hub:
-    build:
-      context: ./services/collaboration
-      dockerfile: Dockerfile
-    container_name: CC-COLLABORATION
-    ports:
-      - "8089:8089"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - MAX_COLLABORATORS=${MAX_COLLABORATORS:-1000}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Real-time Collaboration Platform (COMENTADO - Configure WebSocket primeiro)
+  # collaboration-hub:
+  #   build:
+  #     context: ./services/collaboration
+  #     dockerfile: Dockerfile
+  #   container_name: CC-COLLABORATION
+  #   ports:
+  #     - "8089:8089"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - MAX_COLLABORATORS=${MAX_COLLABORATORS:-1000}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # IoT Edge Devices Manager
-  iot-edge-manager:
-    build:
-      context: ./services/iot
-      dockerfile: Dockerfile
-    container_name: CC-IOT-EDGE
-    ports:
-      - "8090:8090"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - EDGE_DEVICES=${EDGE_DEVICES:-100}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # IoT Edge Devices Manager (COMENTADO - Configure dispositivos primeiro)
+  # iot-edge-manager:
+  #   build:
+  #     context: ./services/iot
+  #     dockerfile: Dockerfile
+  #   container_name: CC-IOT-EDGE
+  #   ports:
+  #     - "8090:8090"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - EDGE_DEVICES=${EDGE_DEVICES:-100}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Advanced Caching Layer
-  global-cache:
-    image: redis:7-alpine
-    container_name: CC-GLOBAL-CACHE
-    ports:
-      - "6380:6379"
-    volumes:
-      - global_cache_data:/data
-    command: redis-server --appendonly yes --requirepass ${REDIS_GLOBAL_PASSWORD:-global_cache_password}
-    networks:
-      - sec_net
+  # Advanced Caching Layer (COMENTADO - Configure Redis cluster primeiro)
+  # global-cache:
+  #   image: redis:7-alpine
+  #   container_name: CC-GLOBAL-CACHE
+  #   ports:
+  #     - "6380:6379"
+  #   volumes:
+  #     - global_cache_data:/data
+  #   command: redis-server --appendonly yes --requirepass ${REDIS_GLOBAL_PASSWORD:-global_cache_password}
+  #   networks:
+  #     - sec_net
 
-  # Message Queue for Microservices
-  message-broker:
-    image: rabbitmq:3-management-alpine
-    container_name: CC-MESSAGE-BROKER
-    ports:
-      - "5673:5672"
-      - "15673:15672"
-    volumes:
-      - message_broker_data:/var/lib/rabbitmq
-    environment:
-      - RABBITMQ_DEFAULT_USER=${RABBITMQ_BROKER_USER:-admin}
-      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_BROKER_PASSWORD:-broker_password}
-    networks:
-      - sec_net
+  # Message Queue for Microservices (COMENTADO - Configure RabbitMQ cluster primeiro)
+  # message-broker:
+  #   image: rabbitmq:3-management-alpine
+  #   container_name: CC-MESSAGE-BROKER
+  #   ports:
+  #     - "5673:5672"
+  #     - "15673:15672"
+  #   volumes:
+  #     - message_broker_data:/var/lib/rabbitmq
+  #   environment:
+  #     - RABBITMQ_DEFAULT_USER=${RABBITMQ_BROKER_USER:-admin}
+  #     - RABBITMQ_DEFAULT_PASS=${RABBITMQ_BROKER_PASSWORD:-broker_password}
+  #   networks:
+  #     - sec_net
 
-  # Advanced Monitoring & Observability
-  observability-stack:
-    image: grafana/agent:latest
-    container_name: CC-OBSERVABILITY
-    ports:
-      - "8091:8091"
-    volumes:
-      - ./docker/observability:/etc/agent
-    command: --config.file=/etc/agent/config.yml --server.http.listen-port=8091
-    networks:
-      - sec_net
+  # Advanced Monitoring & Observability (COMENTADO - Configure métricas avançadas primeiro)
+  # observability-stack:
+  #   image: grafana/agent:latest
+  #   container_name: CC-OBSERVABILITY
+  #   ports:
+  #     - "8091:8091"
+  #   volumes:
+  #     - ./docker/observability:/etc/agent
+  #   command: --config.file=/etc/agent/config.yml --server.http.listen-port=8091
+  #   networks:
+  #     - sec_net
 
-  # Global Service Registry
-  service-registry:
-    image: consul:latest
-    container_name: CC-SERVICE-REGISTRY
-    ports:
-      - "8500:8500"
-      - "8600:8600/udp"
-    volumes:
-      - consul_data:/consul/data
-    command: agent -server -bootstrap-expect=1 -ui -client=0.0.0.0
-    networks:
-      - sec_net
+  # Global Service Registry (COMENTADO - Configure Consul primeiro)
+  # service-registry:
+  #   image: hashicorp/consul:latest
+  #   container_name: CC-SERVICE-REGISTRY
+  #   ports:
+  #     - "8500:8500"
+  #     - "8600:8600/udp"
+  #   volumes:
+  #     - consul_data:/consul/data
+  #   command: agent -server -bootstrap-expect=1 -ui -client=0.0.0.0
+  #   networks:
+  #     - sec_net
 
-  # API Gateway with Advanced Features
-  api-gateway:
-    build:
-      context: ./services/gateway
-      dockerfile: Dockerfile
-    container_name: CC-API-GATEWAY
-    ports:
-      - "8092:8092"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - CONSUL_HOST=service-registry
-      - RATE_LIMIT=${API_RATE_LIMIT:-1000}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
-      - service-registry
+  # API Gateway with Advanced Features (COMENTADO - Configure gateway primeiro)
+  # api-gateway:
+  #   build:
+  #     context: ./services/gateway
+  #     dockerfile: Dockerfile
+  #   container_name: CC-API-GATEWAY
+  #   ports:
+  #     - "8092:8092"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - CONSUL_HOST=service-registry
+  #     - RATE_LIMIT=${API_RATE_LIMIT:-1000}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
+  #     - service-registry
 
-  # Advanced Security Operations Center
-  soc-platform:
-    build:
-      context: ./services/soc
-      dockerfile: Dockerfile
-    container_name: CC-SOC-PLATFORM
-    ports:
-      - "8093:8093"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - SECURITY_EVENTS_DB=${SECURITY_EVENTS_DB:-security_events}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Advanced Security Operations Center (COMENTADO - Configure SOC primeiro)
+  # soc-platform:
+  #   build:
+  #     context: ./services/soc
+  #     dockerfile: Dockerfile
+  #   container_name: CC-SOC-PLATFORM
+  #   ports:
+  #     - "8093:8093"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - SECURITY_EVENTS_DB=${SECURITY_EVENTS_DB:-security_events}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Multi-Cloud Management Platform
-  multi-cloud-manager:
-    build:
-      context: ./services/cloud
-      dockerfile: Dockerfile
-    container_name: CC-MULTI-CLOUD
-    ports:
-      - "8094:8094"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
-      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
-      - GCP_PROJECT_ID=${GCP_PROJECT_ID}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Multi-Cloud Management Platform (COMENTADO - Configure provedores cloud primeiro)
+  # multi-cloud-manager:
+  #   build:
+  #     context: ./services/cloud
+  #     dockerfile: Dockerfile
+  #   container_name: CC-MULTI-CLOUD
+  #   ports:
+  #     - "8094:8094"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+  #     - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+  #     - GCP_PROJECT_ID=${GCP_PROJECT_ID}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Advanced Data Pipeline
-  data-pipeline:
-    build:
-      context: ./services/pipeline
-      dockerfile: Dockerfile
-    container_name: CC-DATA-PIPELINE
-    ports:
-      - "8095:8095"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:9092}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Advanced Data Pipeline (COMENTADO - Configure pipeline primeiro)
+  # data-pipeline:
+  #   build:
+  #     context: ./services/pipeline
+  #     dockerfile: Dockerfile
+  #   container_name: CC-DATA-PIPELINE
+  #   ports:
+  #     - "8095:8095"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:9092}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Machine Learning Model Training
-  ml-training-cluster:
-    build:
-      context: ./services/ml-training
-      dockerfile: Dockerfile
-    container_name: CC-ML-TRAINING
-    ports:
-      - "8096:8096"
-    volumes:
-      - ml_models:/app/models
-      - ml_datasets:/app/datasets
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - GPU_DEVICES=${GPU_DEVICES:-all}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Machine Learning Model Training (COMENTADO - Configure modelos primeiro)
+  # ml-training-cluster:
+  #   build:
+  #     context: ./services/ml-training
+  #     dockerfile: Dockerfile
+  #   container_name: CC-ML-TRAINING
+  #   ports:
+  #     - "8096:8096"
+  #   volumes:
+  #     - ml_models:/app/models
+  #     - ml_datasets:/app/datasets
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - GPU_DEVICES=${GPU_DEVICES:-all}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Advanced Recommendation Engine
-  recommendation-engine:
-    build:
-      context: ./services/recommendation
-      dockerfile: Dockerfile
-    container_name: CC-RECOMMENDATION
-    ports:
-      - "8097:8097"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - RECOMMENDATION_MODEL=${RECOMMENDATION_MODEL:-deep_learning}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Advanced Recommendation Engine (COMENTADO - Configure recomendações primeiro)
+  # recommendation-engine:
+  #   build:
+  #     context: ./services/recommendation
+  #     dockerfile: Dockerfile
+  #   container_name: CC-RECOMMENDATION
+  #   ports:
+  #     - "8097:8097"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - RECOMMENDATION_MODEL=${RECOMMENDATION_MODEL:-deep_learning}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Global Content Delivery Network
-  global-cdn:
-    image: cloudflare/cloudflared:latest
-    container_name: CC-GLOBAL-CDN
-    ports:
-      - "8098:8098"
-    environment:
-      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
-    networks:
-      - sec_net
+  # Global Content Delivery Network (COMENTADO - Configure Cloudflare primeiro)
+  # global-cdn:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: CC-GLOBAL-CDN
+  #   ports:
+  #     - "8098:8098"
+  #   environment:
+  #     - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+  #   networks:
+  #     - sec_net
 
-  # Advanced Threat Intelligence Platform
-  threat-intelligence:
-    build:
-      context: ./services/threat-intel
-      dockerfile: Dockerfile
-    container_name: CC-THREAT-INTEL
-    ports:
-      - "8099:8099"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - THREAT_FEEDS=${THREAT_FEEDS:-all}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Advanced Threat Intelligence Platform (COMENTADO - Configure threat feeds primeiro)
+  # threat-intelligence:
+  #   build:
+  #     context: ./services/threat-intel
+  #     dockerfile: Dockerfile
+  #   container_name: CC-THREAT-INTEL
+  #   ports:
+  #     - "8099:8099"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - THREAT_FEEDS=${THREAT_FEEDS:-all}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Zero-Trust Security Platform
-  zero-trust-platform:
-    build:
-      context: ./services/zero-trust
-      dockerfile: Dockerfile
-    container_name: CC-ZERO-TRUST
-    ports:
-      - "8100:8100"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - IDENTITY_PROVIDER=${IDENTITY_PROVIDER:-internal}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Zero-Trust Security Platform (COMENTADO - Configure identidade primeiro)
+  # zero-trust-platform:
+  #   build:
+  #     context: ./services/zero-trust
+  #     dockerfile: Dockerfile
+  #   container_name: CC-ZERO-TRUST
+  #   ports:
+  #     - "8100:8100"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - IDENTITY_PROVIDER=${IDENTITY_PROVIDER:-internal}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Advanced Event Streaming Platform
-  event-streaming:
-    image: apache/kafka:latest
-    container_name: CC-EVENT-STREAMING
-    ports:
-      - "9093:9092"
-      - "9101:9101"
-    volumes:
-      - kafka_data:/kafka
-    environment:
-      - KAFKA_BROKER_ID=1
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
-    networks:
-      - sec_net
-    depends_on:
-      - zookeeper
+  # Advanced Event Streaming Platform (COMENTADO - Configure Kafka primeiro)
+  # event-streaming:
+  #   image: confluentinc/cp-kafka:latest
+  #   container_name: CC-EVENT-STREAMING
+  #   ports:
+  #     - "9093:9092"
+  #     - "9101:9101"
+  #   volumes:
+  #     - kafka_data:/kafka
+  #   environment:
+  #     - KAFKA_BROKER_ID=1
+  #     - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+  #     - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+  #     - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - zookeeper
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    container_name: CC-ZOOKEEPER
-    ports:
-      - "2181:2181"
-    environment:
-      - ZOOKEEPER_CLIENT_PORT=2181
-      - ZOOKEEPER_TICK_TIME=2000
-    networks:
-      - sec_net
+  # zookeeper:
+  #   image: confluentinc/cp-zookeeper:latest
+  #   container_name: CC-ZOOKEEPER
+  #   ports:
+  #     - "2181:2181"
+  #   environment:
+  #     - ZOOKEEPER_CLIENT_PORT=2181
+  #     - ZOOKEEPER_TICK_TIME=2000
+  #   networks:
+  #     - sec_net
 
-  # Advanced Workflow Engine
-  workflow-engine:
-    build:
-      context: ./services/workflow
-      dockerfile: Dockerfile
-    container_name: CC-WORKFLOW
-    ports:
-      - "8101:8101"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - WORKFLOW_DEFINITIONS=${WORKFLOW_DEFINITIONS:-default}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Advanced Workflow Engine (COMENTADO - Configure workflows primeiro)
+  # workflow-engine:
+  #   build:
+  #     context: ./services/workflow
+  #     dockerfile: Dockerfile
+  #   container_name: CC-WORKFLOW
+  #   ports:
+  #     - "8101:8101"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - WORKFLOW_DEFINITIONS=${WORKFLOW_DEFINITIONS:-default}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Digital Asset Management
-  digital-asset-manager:
-    build:
-      context: ./services/digital-assets
-      dockerfile: Dockerfile
-    container_name: CC-DIGITAL-ASSETS
-    ports:
-      - "8102:8102"
-    volumes:
-      - digital_assets:/app/assets
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - ASSET_STORAGE=${ASSET_STORAGE:-local}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Digital Asset Management (COMENTADO - Configure assets primeiro)
+  # digital-asset-manager:
+  #   build:
+  #     context: ./services/digital-assets
+  #     dockerfile: Dockerfile
+  #   container_name: CC-DIGITAL-ASSETS
+  #   ports:
+  #     - "8102:8102"
+  #   volumes:
+  #     - digital_assets:/app/assets
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - ASSET_STORAGE=${ASSET_STORAGE:-local}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Advanced Search Engine
-  search-engine:
-    build:
-      context: ./services/search
-      dockerfile: Dockerfile
-    container_name: CC-SEARCH-ENGINE
-    ports:
-      - "8103:8103"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST:-elasticsearch:9200}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Advanced Search Engine (COMENTADO - Configure Elasticsearch primeiro)
+  # search-engine:
+  #   build:
+  #     context: ./services/search
+  #     dockerfile: Dockerfile
+  #   container_name: CC-SEARCH-ENGINE
+  #   ports:
+  #     - "8103:8103"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST:-elasticsearch:9200}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
-  # Global Configuration Management
-  config-management:
-    build:
-      context: ./services/config
-      dockerfile: Dockerfile
-    container_name: CC-CONFIG-MANAGEMENT
-    ports:
-      - "8104:8104"
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - CONFIG_VERSION=${CONFIG_VERSION:-latest}
-    networks:
-      - sec_net
-    depends_on:
-      - redis
+  # Global Configuration Management (COMENTADO - Configure config primeiro)
+  # config-management:
+  #   build:
+  #     context: ./services/config
+  #     dockerfile: Dockerfile
+  #   container_name: CC-CONFIG-MANAGEMENT
+  #   ports:
+  #     - "8104:8104"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - CONFIG_VERSION=${CONFIG_VERSION:-latest}
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
 
 networks:
   sec_net:
