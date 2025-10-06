@@ -96,27 +96,16 @@ services:
     networks:
       - sec_net
 
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: CC-PROMETHEUS
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: CC-LOKI
+    command: ["sh", "-c", "cp /tmp/loki-config.yml /etc/loki/config.yml && loki -config.file=/etc/loki/config.yml -config.expand-env=true"]
     volumes:
-      - ./docker/prometheus/prometheus.yml:/tmp/prometheus.yml:ro
-    command: ["sh", "-c", "cp /tmp/prometheus.yml /etc/prometheus/prometheus.yml && prometheus --config.file=/etc/prometheus/prometheus.yml"]
+      - ./docker/loki/loki-config.yml:/tmp/loki-config.yml:ro
     ports:
-      - "9090:9090"
+      - "3100:3100"
     networks:
       - sec_net
-
-  # loki:
-  #   image: grafana/loki:2.9.8
-  #   container_name: CC-LOKI
-  #   command: ["sh", "-c", "cp /tmp/loki-config.yml /etc/loki/config.yml && loki -config.file=/etc/loki/config.yml -config.expand-env=true"]
-  #   volumes:
-  #     - ./docker/loki/loki-config.yml:/tmp/loki-config.yml:ro
-  #   ports:
-  #     - "3100:3100"
-  #   networks:
-  #     - sec_net
 
   # promtail:
   #   image: grafana/promtail:2.9.8
@@ -138,4 +127,3 @@ volumes:
   postgres_data:
   mongo_data:
   grafana_data:
-  prometheus_config:
