@@ -10,22 +10,24 @@ RUN apk add --no-cache python3 make g++
 COPY package.json package-lock.json* ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci
 
 # Copy source
 COPY tsconfig.json ./
 COPY src ./src
 
-# Runtime image (no build step)
+# Build application
+RUN npm run build
+
+# Runtime image
 FROM node:22-alpine AS runtime
 WORKDIR /usr/src/app
 ENV NODE_ENV=production
 
 # Copy only necessary files
 COPY --from=base /usr/src/app/node_modules ./node_modules
-COPY --from=base /usr/src/app/src ./src
-COPY --from=base /usr/src/app/tsconfig.json ./
+COPY --from=base /usr/src/app/dist ./dist
 COPY --from=base /usr/src/app/package.json ./
 
 EXPOSE 3000
-CMD ["npm", "start"]
+CMD ["node", "dist/main.js"]
