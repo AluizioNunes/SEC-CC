@@ -1,16 +1,19 @@
-# Frontend builder - Simplified build process
+# Frontend builder - Robust build process
 FROM node:20-alpine AS builder
 
 # Install additional debugging tools
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl git
 
+# Set working directory to project root
 WORKDIR /app
 
 # Copy package files first for better Docker layer caching
 COPY package.json package-lock.json* ./
 
 # Install dependencies with detailed logging and better error handling
-RUN echo "📦 Installing dependencies..." && \
+RUN echo "📦 Installing dependencies in $(pwd)..." && \
+    pwd && \
+    ls -la && \
     npm ci --verbose --no-audit --no-fund && \
     echo "✅ Dependencies installed successfully"
 
@@ -28,22 +31,31 @@ ENV VITE_API_URL=${VITE_API_URL}
 ENV VITE_NESTJS_URL=${VITE_NESTJS_URL}
 ENV VITE_FRONTEND_URL=${VITE_FRONTEND_URL}
 
-# Build the application with simplified approach
-RUN echo "🚀 Starting simplified build process..." && \
+# Build the application with comprehensive debugging
+RUN echo "🚀 Starting build process in $(pwd)..." && \
     echo "📊 Node version: $(node --version)" && \
     echo "📦 NPM version: $(npm --version)" && \
     echo "🔧 Environment: $NODE_ENV" && \
     echo "🌐 API URL: $VITE_API_URL" && \
     echo "🔗 NestJS URL: $VITE_NESTJS_URL" && \
     echo "🖥️ Frontend URL: $VITE_FRONTEND_URL" && \
+    echo "📁 Current directory contents:" && \
+    ls -la && \
     echo "" && \
-    echo "⚡ Running simplified Vite build..." && \
-    npm run build:dev && \
+    echo "🔍 Checking package.json scripts:" && \
+    cat package.json | jq '.scripts' 2>/dev/null || cat package.json | grep -A 10 '"scripts"' && \
+    echo "" && \
+    echo "⚡ Running TypeScript check first..." && \
+    npx tsc --noEmit --skipLibCheck && \
+    echo "✅ TypeScript check completed" && \
+    echo "" && \
+    echo "⚡ Running build command..." && \
+    npm run build && \
     echo "✅ Build completed successfully!" && \
     echo "📊 Build output:" && \
-    ls -la dist && \
+    ls -la dist 2>/dev/null && \
     echo "📁 Files in dist:" && \
-    find dist -type f | head -20
+    find dist -type f | wc -l | xargs echo "files found" 2>/dev/null || echo "No dist directory or no files"
 
 # Production stage - serve with nginx
 FROM nginx:alpine AS production
