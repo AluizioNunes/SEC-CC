@@ -99,9 +99,8 @@ services:
   loki:
     image: grafana/loki:2.9.8
     container_name: CC-LOKI
-    command: ["sh", "-c", "cp /tmp/loki-config.yml /etc/loki/config.yml && loki -config.file=/etc/loki/config.yml -config.expand-env=true"]
     volumes:
-      - ./docker/loki/loki-config.yml:/tmp/loki-config.yml:ro
+      - ./docker/loki/loki-config.yml:/etc/loki/config.yml:ro
     ports:
       - "3100:3100"
     networks:
