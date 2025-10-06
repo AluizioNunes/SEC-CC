@@ -1,0 +1,41 @@
+apiVersion: businessautoscaler.io/v1alpha1
+kind: BusinessMetricsAutoscaler
+metadata:
+  name: revenue-based-autoscaler
+  namespace: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: business-intelligence
+  minReplicas: 2
+  maxReplicas: 20
+  businessMetrics:
+  - name: revenue_growth_rate
+    targetValue: "10"
+    metricQuery: "business_revenue_growth_rate"
+    scaleUpThreshold: "15"
+    scaleDownThreshold: "5"
+  - name: user_engagement_score
+    targetValue: "0.8"
+    metricQuery: "business_user_engagement"
+    scaleUpThreshold: "0.9"
+    scaleDownThreshold: "0.7"
+  - name: transaction_volume
+    targetValue: "1000"
+    metricQuery: "business_transaction_volume_hourly"
+    scaleUpThreshold: "1500"
+    scaleDownThreshold: "500"
+  scalingSchedule:
+  - name: business-hours-scaling
+    schedule: "0 9 * * 1-5"
+    targetReplicas: 15
+    duration: "8h"
+  - name: weekend-scaling
+    schedule: "0 18 * * 6,0"
+    targetReplicas: 5
+    duration: "14h"
+  - name: peak-hours-scaling
+    schedule: "0 12 * * *"
+    targetReplicas: 20
+    duration: "4h"

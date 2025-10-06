@@ -1,0 +1,46 @@
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "300s"
+      httpMethod: "POST"
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: false
+    jsonData:
+      httpHeaderName1: "X-Scope-OrgID"
+      httpHeaderValue1: "tenant1"
+      maxLines: 1000
+
+  - name: PostgreSQL
+    type: postgres
+    url: postgres:5432
+    database: secdb
+    user: sec
+    secureJsonData:
+      password: "secpass"
+    jsonData:
+      sslmode: "disable"
+      maxOpenConns: 100
+      maxIdleConns: 5
+      connMaxLifetime: 14400
+
+  - name: Redis
+    type: redis-datasource
+    access: proxy
+    url: redis://redis:6379/0
+    editable: false
+    jsonData:
+      poolSize: 5
+      timeout: 10
+      pingInterval: 30
+      pipelineWindow: 100

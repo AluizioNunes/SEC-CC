@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-autoscaler-config
+  namespace: kube-system
+data:
+  cluster-autoscaler-config: |
+    {
+      "cloudProvider": "aws",
+      "autoDiscovery": {
+        "clusterName": "sec-ultra-revolutionary-prod"
+      },
+      "scaleDown": {
+        "enabled": true,
+        "delayAfterAdd": "10m",
+        "delayAfterDelete": "10s",
+        "delayAfterFailure": "3m",
+        "unneededTime": "10m",
+        "utilizationThreshold": "0.5"
+      },
+      "scaleUp": {
+        "enabled": true,
+        "delayAfterFailure": "3m",
+        "delayAfterSuccess": "1m"
+      },
+      "maxNodeProvisionTime": "15m",
+      "maxGracefulTerminationSec": "600",
+      "maxTotalUnreadyPercentage": "45",
+      "okTotalUnreadyCount": "3",
+      "scaleUpFromZero": true,
+      "maxEmptyBulkDelete": "10",
+      "maxNodesTotal": "1000"
+    }

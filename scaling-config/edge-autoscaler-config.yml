@@ -1,0 +1,61 @@
+apiVersion: edgeautoscaler.io/v1alpha1
+kind: EdgeAutoscaler
+metadata:
+  name: global-edge-autoscaler
+  namespace: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: edge-orchestrator
+  minReplicas: 8
+  maxReplicas: 100
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Geographic
+    geographic:
+      regions:
+      - name: us-east
+        targetLoad: 0.7
+        maxNodes: 20
+      - name: us-west
+        targetLoad: 0.7
+        maxNodes: 15
+      - name: eu-west
+        targetLoad: 0.7
+        maxNodes: 18
+      - name: ap-southeast
+        targetLoad: 0.7
+        maxNodes: 25
+  scalingStrategy:
+    type: predictive
+    predictionWindow: 1h
+    algorithm: machine-learning
+  regions:
+  - name: us-east
+    provider: aws
+    instanceType: c5.xlarge
+    availabilityZones: ["us-east-1a", "us-east-1b", "us-east-1c"]
+  - name: us-west
+    provider: aws
+    instanceType: c5.xlarge
+    availabilityZones: ["us-west-2a", "us-west-2b", "us-west-2c"]
+  - name: eu-west
+    provider: aws
+    instanceType: c5.xlarge
+    availabilityZones: ["eu-west-1a", "eu-west-1b", "eu-west-1c"]
+  - name: ap-southeast
+    provider: aws
+    instanceType: c5.xlarge
+    availabilityZones: ["ap-southeast-1a", "ap-southeast-1b", "ap-southeast-1c"]

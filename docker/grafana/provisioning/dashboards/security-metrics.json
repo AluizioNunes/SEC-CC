@@ -1,0 +1,41 @@
+{
+  "dashboard": {
+    "title": "SEC Ultra-Revolutionary - Security Metrics",
+    "tags": ["security", "quantum", "threats"],
+    "panels": [
+      {
+        "title": "Security Events",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "security_events_total",
+            "legendFormat": "{{severity}}"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+      },
+      {
+        "title": "Quantum Key Rotations",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "quantum_keys_rotated_total",
+            "legendFormat": "Keys Rotated Today"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 }
+      },
+      {
+        "title": "Threat Intelligence",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "threat_feeds_score",
+            "legendFormat": "{{feed}}"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+      }
+    ]
+  }
+}

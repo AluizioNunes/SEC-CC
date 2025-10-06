@@ -1,0 +1,100 @@
+{
+  "dashboard": {
+    "title": "SEC Ultra-Revolutionary - Executive Overview",
+    "tags": ["executive", "overview", "kpi"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "title": "Overall System Health",
+        "type": "gauge",
+        "targets": [
+          {
+            "expr": "up{job=\"fastapi\"} + up{job=\"nestjs\"} + up{job=\"redis\"} + up{job=\"postgres\"}",
+            "legendFormat": "{{job}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "yellow", "value": 2 },
+                { "color": "green", "value": 4 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
+      },
+      {
+        "title": "Business Metrics Overview",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "business_revenue_total",
+            "legendFormat": "Total Revenue"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": { "mode": "continuous-GrYlRd" },
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": 0 },
+                { "color": "yellow", "value": 1000000 },
+                { "color": "red", "value": 10000000 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 12, "y": 0 }
+      },
+      {
+        "title": "AI Model Performance",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "ai_model_accuracy",
+            "legendFormat": "{{model}}"
+          },
+          {
+            "expr": "ai_model_latency",
+            "legendFormat": "{{model}} - Latency"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 }
+      },
+      {
+        "title": "Blockchain Analytics",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "blockchain_transactions_total",
+            "legendFormat": "Transactions"
+          },
+          {
+            "expr": "blockchain_volume_usd",
+            "legendFormat": "Volume (USD)"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 }
+      },
+      {
+        "title": "Edge Computing Performance",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "edge_node_load",
+            "legendFormat": "{{node}}"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 }
+      }
+    ],
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}
