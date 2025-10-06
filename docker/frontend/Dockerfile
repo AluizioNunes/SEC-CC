@@ -7,10 +7,11 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 
 # Install production and dev deps for build (using npm install to avoid cache issues)
-RUN npm install
+RUN npm install --verbose
 
 # Copy source
 COPY . .
 
 # Build on container start so dist is written to the mounted volume
-CMD ["sh", "-c", "npm run build && tail -f /dev/null"]
+# Add debugging and better error handling
+CMD ["sh", "-c", "echo 'Starting build process...' && npm run build --verbose && echo 'Build completed successfully' && tail -f /dev/null"]
