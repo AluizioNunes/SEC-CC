@@ -1,13 +1,10 @@
-# Frontend builder with enhanced error handling and debugging
-FROM node:20-alpine
+# Frontend builder - Multi-stage build for production
+FROM node:20-alpine AS builder
 
 # Install additional debugging tools
 RUN apk add --no-cache curl
 
 WORKDIR /app
-
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 
 # Copy package files first for better Docker layer caching
 COPY package.json package-lock.json* ./
@@ -20,30 +17,32 @@ RUN echo "📦 Installing dependencies..." && \
 # Copy source code
 COPY . .
 
-# Change ownership to nodejs user
-RUN chown -R nextjs:nodejs /app
-USER nextjs
-
-# Enhanced build command with comprehensive error handling and fallback
-CMD ["sh", "-c", "\
-    echo '🚀 Starting SEC Ultra-Revolutionary Frontend Build...' && \
-    echo '📊 Node version: $(node --version)' && \
-    echo '📦 NPM version: $(npm --version)' && \
-    echo '🔧 Working directory: $(pwd)' && \
-    echo '' && \
-    echo '🔨 Running TypeScript compilation...' && \
+# Build the application
+RUN echo "🚀 Starting build process..." && \
+    echo "📊 Node version: $(node --version)" && \
+    echo "📦 NPM version: $(npm --version)" && \
+    echo "🔨 Running TypeScript compilation..." && \
     npx tsc -b --verbose && \
-    echo '✅ TypeScript compilation completed' && \
-    echo '' && \
-    echo '⚡ Running Vite build...' && \
-    if npm run build; then \
-        echo '✅ Build completed successfully!' && \
-        echo '📊 Build output:' && \
-        ls -la dist; \
-    else \
-        echo '⚠️ Build failed, using fallback HTML...' && \
-        cp fallback.html dist/index.html 2>/dev/null || echo 'Fallback page ready'; \
-    fi && \
-    echo '🎯 Build process completed' && \
-    tail -f /dev/null \
-"]
+    echo "✅ TypeScript compilation completed" && \
+    echo "⚡ Running Vite build..." && \
+    npm run build && \
+    echo "✅ Build completed successfully!" && \
+    echo "📊 Build output:" && \
+    ls -la dist
+
+# Production stage - serve with nginx
+FROM nginx:alpine AS production
+
+# Copy built assets from builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Add health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
