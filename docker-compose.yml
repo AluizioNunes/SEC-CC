@@ -112,9 +112,17 @@ services:
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./docker/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - promtail_config:/etc/promtail/config.yml:ro
     networks:
       - sec_net
+
+  # Copy promtail config to named volume during build
+  promtail_config_builder:
+    image: alpine:latest
+    command: ["sh", "-c", "cp /tmp/promtail-config.yml /etc/promtail/config.yml"]
+    volumes:
+      - promtail_config:/etc/promtail/config.yml
+      - ./docker/promtail/promtail-config.yml:/tmp/promtail-config.yml:ro
 
 networks:
   sec_net:
@@ -125,3 +133,4 @@ volumes:
   postgres_data:
   mongo_data:
   grafana_data:
+  promtail_config:
