@@ -1,0 +1,21 @@
+{
+  "nodeId": "edge-eu-west-1",
+  "region": "eu-west",
+  "location": {
+    "latitude": 38.532960,
+    "longitude": 127.538640,
+    "country": "eu",
+    "city": "eu 242"
+  },
+  "specs": {
+    "cpu": 63,
+    "memory": 77,
+    "storage": 3783,
+    "bandwidth": 1445
+  },
+  "status": "online",
+  "load": .24,
+  "latency": 15,
+  "services": ["compute", "storage", "cache", "ai"],
+  "lastSeen": "2025-10-06T15:22:08Z"
+}

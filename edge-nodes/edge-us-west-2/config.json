@@ -1,0 +1,21 @@
+{
+  "nodeId": "edge-us-west-2",
+  "region": "us-west",
+  "location": {
+    "latitude": 24.200820,
+    "longitude": -78.483240,
+    "country": "us",
+    "city": "us 272"
+  },
+  "specs": {
+    "cpu": 57,
+    "memory": 198,
+    "storage": 4658,
+    "bandwidth": 1174
+  },
+  "status": "online",
+  "load": .28,
+  "latency": 19,
+  "services": ["compute", "storage", "cache", "ai"],
+  "lastSeen": "2025-10-06T15:22:08Z"
+}

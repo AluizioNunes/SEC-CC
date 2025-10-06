@@ -1,0 +1,31 @@
+{
+  "source": "github",
+  "baseUrl": "https",
+  "apiKey": "YOUR_GITHUB_API_KEY",
+  "rateLimit": {
+    "requestsPerMinute": 60,
+    "requestsPerHour": 1000
+  },
+  "endpoints": {
+    "price_data": "/coins/markets",
+    "market_data": "/global",
+    "news": "/everything",
+    "social": "/tweets/search/recent",
+    "github": "/repos",
+    "blockchain": "/charts"
+  },
+  "dataMapping": {
+    "price": "current_price",
+    "volume": "total_volume",
+    "marketCap": "market_cap",
+    "sentiment": "sentiment_score"
+  },
+  "cache": {
+    "enabled": true,
+    "ttl": 300,
+    "redisKey": "external:github"
+  },
+  "status": "active",
+  "lastSync": "2025-10-06T15:22:48Z",
+  "syncFrequency": "5m"
+}

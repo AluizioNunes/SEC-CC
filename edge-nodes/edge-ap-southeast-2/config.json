@@ -1,0 +1,21 @@
+{
+  "nodeId": "edge-ap-southeast-2",
+  "region": "ap-southeast",
+  "location": {
+    "latitude": 85.209660,
+    "longitude": -79.483320,
+    "country": "ap",
+    "city": "ap 245"
+  },
+  "specs": {
+    "cpu": 55,
+    "memory": 214,
+    "storage": 2394,
+    "bandwidth": 1140
+  },
+  "status": "online",
+  "load": .77,
+  "latency": 81,
+  "services": ["compute", "storage", "cache", "ai"],
+  "lastSeen": "2025-10-06T15:22:08Z"
+}

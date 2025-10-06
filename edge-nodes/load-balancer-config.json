@@ -1,0 +1,17 @@
+{
+  "algorithm": "weighted-response-time",
+  "nodes": "edge-ap-southeast-1","edge-ap-southeast-2","edge-us-west-1","edge-us-west-2","edge-us-east-1","edge-us-east-2","edge-eu-west-1","edge-eu-west-2",
+  "metrics": {
+    "totalRequests": 0,
+    "averageResponseTime": 0,
+    "successRate": 1.0,
+    "bandwidthUsage": 0
+  },
+  "healthCheckInterval": "30s",
+  "autoScaling": {
+    "enabled": true,
+    "minNodes": 2,
+    "maxNodes": 10,
+    "targetLoad": 0.7
+  }
+}
