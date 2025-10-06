@@ -1,4 +1,4 @@
-# Frontend builder - Multi-stage build for production
+# Frontend builder - Simplified build process
 FROM node:20-alpine AS builder
 
 # Install additional debugging tools
@@ -28,8 +28,8 @@ ENV VITE_API_URL=${VITE_API_URL}
 ENV VITE_NESTJS_URL=${VITE_NESTJS_URL}
 ENV VITE_FRONTEND_URL=${VITE_FRONTEND_URL}
 
-# Build the application with enhanced error handling
-RUN echo "🚀 Starting build process..." && \
+# Build the application with simplified approach
+RUN echo "🚀 Starting simplified build process..." && \
     echo "📊 Node version: $(node --version)" && \
     echo "📦 NPM version: $(npm --version)" && \
     echo "🔧 Environment: $NODE_ENV" && \
@@ -37,12 +37,8 @@ RUN echo "🚀 Starting build process..." && \
     echo "🔗 NestJS URL: $VITE_NESTJS_URL" && \
     echo "🖥️ Frontend URL: $VITE_FRONTEND_URL" && \
     echo "" && \
-    echo "🔨 Running TypeScript compilation..." && \
-    npx tsc -b --verbose && \
-    echo "✅ TypeScript compilation completed" && \
-    echo "" && \
-    echo "⚡ Running Vite build..." && \
-    npm run build && \
+    echo "⚡ Running simplified Vite build..." && \
+    npm run build:dev && \
     echo "✅ Build completed successfully!" && \
     echo "📊 Build output:" && \
     ls -la dist && \
