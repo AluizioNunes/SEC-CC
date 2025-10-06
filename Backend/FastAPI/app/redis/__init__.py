@@ -39,6 +39,9 @@ from .grafana_cache import GrafanaCacheManager, grafana_cache_manager
 # Prometheus Metrics Caching
 from .prometheus_cache import PrometheusCacheManager, prometheus_cache_manager
 
+# Loki Log Caching
+from .loki_cache import LokiCacheManager, loki_cache_manager
+
 # Advanced Data Structures
 from .data_structures import RedisDataStructures, redis_ds
 
@@ -83,6 +86,7 @@ __all__ = [
     # Monitoring Stack
     "GrafanaCacheManager", "grafana_cache_manager",
     "PrometheusCacheManager", "prometheus_cache_manager",
+    "LokiCacheManager", "loki_cache_manager",
 
     # Data Structures
     "RedisDataStructures", "redis_ds",

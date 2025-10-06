@@ -25,6 +25,7 @@ from .redis import (
     event_sourcing_manager,
     grafana_cache_manager,
     prometheus_cache_manager,
+    loki_cache_manager,
     get_redis_client,
     test_redis_connection,
     EventType
@@ -114,6 +115,7 @@ async def root():
             "Redis Streams (Event Sourcing)",
             "Grafana Dashboard Caching (60% UI performance)",
             "Prometheus Query Caching (75% metrics speed)",
+            "Loki Log Caching (90% search speed)",
             "Advanced Data Structures",
             "Real-time Analytics"
         ],
@@ -124,7 +126,8 @@ async def root():
             "mongodb_demo": "/redis-advanced/mongodb/aggregation",
             "broker_demo": "/redis-advanced/broker/publish",
             "events_demo": "/redis-advanced/events/publish",
-            "monitoring_demo": "/redis-advanced/monitoring/grafana/cache"
+            "monitoring_demo": "/redis-advanced/monitoring/grafana/cache",
+            "loki_demo": "/redis-advanced/loki/query"
         },
         "timestamp": time.time()
     }
@@ -144,6 +147,7 @@ async def health():
         event_stats = await event_sourcing_manager.get_event_stats()
         grafana_stats = await grafana_cache_manager.get_cache_stats()
         prometheus_stats = await prometheus_cache_manager.get_cache_stats()
+        loki_stats = await loki_cache_manager.get_cache_stats()
 
         return {
             "status": "healthy",
@@ -158,6 +162,7 @@ async def health():
                 "Event Sourcing",
                 "Grafana Dashboard Caching",
                 "Prometheus Query Caching",
+                "Loki Log Caching",
                 "Advanced Data Structures"
             ],
             "cache_stats": cache_stats,
@@ -170,6 +175,7 @@ async def health():
             "event_sourcing": event_stats,
             "grafana_cache": grafana_stats,
             "prometheus_cache": prometheus_stats,
+            "loki_cache": loki_stats,
             "timestamp": time.time()
         }
     except Exception as e:
@@ -187,7 +193,8 @@ async def demo():
             "hybrid_broker": "RabbitMQ + Redis hybrid message broker with 70% throughput improvement",
             "event_sourcing": "Complete event sourcing with Redis Streams",
             "grafana_caching": "Dashboard caching with 60% UI performance improvement",
-            "prometheus_caching": "Metrics caching with 75% query speed improvement"
+            "prometheus_caching": "Metrics caching with 75% query speed improvement",
+            "loki_caching": "Log caching with 90% search speed improvement"
         },
         "demo_endpoints": {
             "advanced_demo": "/redis-advanced/demo/test_user",
@@ -195,7 +202,8 @@ async def demo():
             "mongodb_demo": "/redis-advanced/mongodb/aggregation",
             "broker_demo": "/redis-advanced/broker/publish",
             "events_demo": "/redis-advanced/events/publish",
-            "monitoring_demo": "/redis-advanced/monitoring/grafana/cache"
+            "monitoring_demo": "/redis-advanced/monitoring/grafana/cache",
+            "loki_demo": "/redis-advanced/loki/query"
         }
     }
 
