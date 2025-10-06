@@ -110,7 +110,7 @@ services:
   loki:
     image: grafana/loki:2.9.8
     container_name: CC-LOKI
-    command: ["sh", "-c", "cp /tmp/loki-config.yml /etc/loki/config.yml && loki -config.file=/etc/loki/config.yml"]
+    command: ["sh", "-c", "cp /tmp/loki-config.yml /etc/loki/config.yml && loki -config.file=/etc/loki/config.yml -config.expand-env=true"]
     volumes:
       - ./docker/loki/loki-config.yml:/tmp/loki-config.yml:ro
     ports:
@@ -121,7 +121,7 @@ services:
   promtail:
     image: grafana/promtail:2.9.8
     container_name: CC-PROMTAIL
-    command: ["sh", "-c", "cp /tmp/promtail-config.yml /etc/promtail/config.yml && promtail -config.file=/etc/promtail/config.yml"]
+    command: ["sh", "-c", "cp /tmp/promtail-config.yml /etc/promtail/config.yml && promtail -config.file=/etc/promtail/config.yml -config.expand-env=true"]
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
