@@ -112,7 +112,8 @@ services:
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./docker/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - ./docker/promtail:/etc/promtail:ro
+    command: -config.file=/etc/promtail/promtail-config.yml
     networks:
       - sec_net
 
