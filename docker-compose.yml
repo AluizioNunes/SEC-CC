@@ -8,16 +8,31 @@ services:
       - sec_net
 
   frontend:
+    image: nginx:alpine
+    container_name: CC-FRONTEND
+    ports:
+      - "5173:80"
+    volumes:
+      - ./dist:/usr/share/nginx/html:ro
+      - ./docker/frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - sec_net
+    depends_on:
+      - build-frontend
+    restart: unless-stopped
+
+  # Frontend builder (runs once to create dist)
+  build-frontend:
     build:
       context: .
       dockerfile: ./docker/frontend/Dockerfile
-    container_name: CC-FRONTEND
+    container_name: CC-BUILD-FRONTEND
     volumes:
       - frontend_dist:/app/dist
-    ports:
-      - "5173:80"
     networks:
       - sec_net
+    profiles:
+      - build
 
   fastapi:
     build:
