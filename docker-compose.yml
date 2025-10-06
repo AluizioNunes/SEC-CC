@@ -100,14 +100,19 @@ services:
     image: prom/prometheus:latest
     container_name: CC-PROMETHEUS
     volumes:
-      - type: bind
-        source: ./docker/prometheus/prometheus.yml
-        target: /etc/prometheus/prometheus.yml
-        read_only: true
+      - prometheus_config:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
     networks:
       - sec_net
+
+  # Copy prometheus.yml to the named volume during build
+  prometheus_config_builder:
+    image: alpine:latest
+    command: ["sh", "-c", "cp /tmp/prometheus.yml /etc/prometheus/prometheus.yml && chown prometheus:prometheus /etc/prometheus/prometheus.yml"]
+    volumes:
+      - prometheus_config:/etc/prometheus/prometheus.yml:ro
+      - ./docker/prometheus/prometheus.yml:/tmp/prometheus.yml:ro
 
   loki:
     image: grafana/loki:2.9.8
@@ -146,3 +151,4 @@ volumes:
   postgres_data:
   mongo_data:
   grafana_data:
+  prometheus_config:
