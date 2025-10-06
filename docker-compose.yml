@@ -24,16 +24,12 @@ services:
       context: ./Backend/FastAPI
       dockerfile: Dockerfile
     container_name: CC-FASTAPI
-    environment:
-      POSTGRES_URL: ${POSTGRES_URL}
-      MONGODB_URL: ${MONGODB_URL}
-      REDIS_URL: ${REDIS_URL}
-      RABBITMQ_URL: ${RABBITMQ_URL}
-      LOG_LEVEL: ${FASTAPI_LOG_LEVEL:-info}
     ports:
       - "8000:8000"
     networks:
       - sec_net
+    depends_on:
+      - redis
 
   nestjs:
     build:
