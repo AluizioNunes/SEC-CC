@@ -124,14 +124,11 @@ services:
   promtail:
     image: grafana/promtail:2.9.8
     container_name: CC-PROMTAIL
-    command: ["-config.file=/etc/promtail/config.yml"]
+    command: ["sh", "-c", "cp /tmp/promtail-config.yml /etc/promtail/config.yml && /usr/bin/promtail -config.file=/etc/promtail/config.yml"]
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - type: bind
-        source: ./docker/promtail/promtail-config.yml
-        target: /etc/promtail/config.yml
-        read_only: true
+      - ./docker/promtail/promtail-config.yml:/tmp/promtail-config.yml:ro
     networks:
       - sec_net
 
