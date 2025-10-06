@@ -16,17 +16,16 @@ RUN npm install
 COPY tsconfig.json ./
 COPY src ./src
 
-# Build
-RUN npm run build
-
-# Runtime image
+# Runtime image (no build step)
 FROM node:22-alpine AS runtime
 WORKDIR /usr/src/app
 ENV NODE_ENV=production
 
 # Copy only necessary files
 COPY --from=base /usr/src/app/node_modules ./node_modules
-COPY --from=base /usr/src/app/dist ./dist
+COPY --from=base /usr/src/app/src ./src
+COPY --from=base /usr/src/app/tsconfig.json ./
+COPY --from=base /usr/src/app/package.json ./
 
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+CMD ["npm", "start"]
