@@ -1,16 +1,16 @@
-# NestJS Dockerfile
-FROM node:22-alpine AS base
+# NestJS Dockerfile - Using Node 20 LTS
+FROM node:20-alpine
 
 WORKDIR /usr/src/app
 
 # Install build deps
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache python3 make g++ git
 
 # Copy package files
-COPY package.json package-lock.json* ./
+COPY package.json ./
 
-# Install dependencies
-RUN npm ci
+# Install ALL dependencies (including dev dependencies for build)
+RUN npm install
 
 # Copy source
 COPY tsconfig.json ./
@@ -18,16 +18,6 @@ COPY src ./src
 
 # Build application
 RUN npm run build
-
-# Runtime image
-FROM node:22-alpine AS runtime
-WORKDIR /usr/src/app
-ENV NODE_ENV=production
-
-# Copy only necessary files
-COPY --from=base /usr/src/app/node_modules ./node_modules
-COPY --from=base /usr/src/app/dist ./dist
-COPY --from=base /usr/src/app/package.json ./
 
 EXPOSE 3000
 CMD ["node", "dist/main.js"]
