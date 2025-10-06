@@ -101,8 +101,11 @@ services:
   prometheus:
     image: prom/prometheus:latest
     container_name: CC-PROMETHEUS
-    volumes:
-      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    environment:
+      - PROMETHEUS_CONFIG_FILE=/etc/prometheus/prometheus.yml
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
     networks:
@@ -111,8 +114,11 @@ services:
   loki:
     image: grafana/loki:2.9.8
     container_name: CC-LOKI
-    volumes:
-      - ./docker/loki/loki-config.yml:/etc/loki/config.yml:ro
+    environment:
+      - LOKI_CONFIG_FILE=/etc/loki/config.yml
+    configs:
+      - source: loki_config
+        target: /etc/loki/config.yml
     ports:
       - "3100:3100"
     networks:
@@ -165,3 +171,95 @@ configs:
               labels:
                 job: varlogs
                 __path__: /var/log/*.log
+
+  prometheus_config:
+    content: |
+      global:
+        scrape_interval: 15s
+        evaluation_interval: 15s
+      
+      rule_files:
+        # - "first_rules.yml"
+        # - "second_rules.yml"
+      
+      scrape_configs:
+        - job_name: 'prometheus'
+          static_configs:
+            - targets: ['localhost:9090']
+      
+        - job_name: 'loki'
+          static_configs:
+            - targets: ['loki:3100']
+          metrics_path: '/metrics'
+      
+        - job_name: 'grafana'
+          static_configs:
+            - targets: ['grafana:3000']
+      
+        - job_name: 'fastapi'
+          static_configs:
+            - targets: ['fastapi:8000']
+          metrics_path: '/metrics'
+      
+        - job_name: 'nestjs'
+          static_configs:
+            - targets: ['nestjs:3000']
+          metrics_path: '/metrics'
+
+  loki_config:
+    content: |
+      auth_enabled: false
+
+      server:
+        http_listen_port: 3100
+        grpc_listen_port: 9096
+
+      common:
+        instance_addr: 127.0.0.1
+        path_prefix: /tmp/loki
+        storage:
+          filesystem:
+            chunks_directory: /tmp/loki/chunks
+            rules_directory: /tmp/loki/rules
+        replication_factor: 1
+        ring:
+          kvstore:
+            store: inmemory
+
+      query_range:
+        results_cache:
+          cache:
+            embedded_cache:
+              enabled: true
+              max_size_mb: 100
+
+      schema_config:
+        configs:
+          - from: 2020-10-24
+            store: boltdb-shipper
+            object_store: filesystem
+            schema: v11
+            index:
+              prefix: index_
+              period: 24h
+
+      ruler:
+        alertmanager_url: http://localhost:9093
+
+      ingester:
+        lifecycler:
+          address: 127.0.0.1
+          ring:
+            kvstore:
+              store: inmemory
+            replication_factor: 1
+          final_sleep: 0s
+        chunk_idle_period: 5m
+        max_chunk_age: 1h
+        chunk_target_size: 1048576
+        chunk_retain_period: 30s
+        max_transfer_retries: 0
+
+      limits_config:
+        reject_old_samples: true
+        reject_old_samples_max_age: 168h
