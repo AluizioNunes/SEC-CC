@@ -222,6 +222,64 @@ async def health():
         return {"error": str(e), "redis_connected": False}
 
 
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint"""
+    try:
+        # Get various metrics from different components
+        cache_stats = api_cache_manager.get_cache_stats()
+        session_stats = await session_cluster.get_session_stats()
+        rate_limit_stats = rate_limiter.get_rate_limit_stats()
+        postgres_stats = postgres_cache_manager.get_cache_stats()
+        mongodb_stats = mongodb_cache_manager.get_cache_stats()
+        broker_stats = await hybrid_broker.get_message_stats()
+        event_stats = await event_sourcing_manager.get_event_stats()
+        prometheus_stats = prometheus_cache_manager.get_cache_stats()
+        
+        # Format metrics in Prometheus format
+        metrics_data = [
+            "# HELP redis_cache_hits Total number of cache hits",
+            "# TYPE redis_cache_hits counter",
+            f"redis_cache_hits {cache_stats.get('hits', 0)}",
+            
+            "# HELP redis_cache_misses Total number of cache misses",
+            "# TYPE redis_cache_misses counter",
+            f"redis_cache_misses {cache_stats.get('misses', 0)}",
+            
+            "# HELP active_sessions Number of active user sessions",
+            "# TYPE active_sessions gauge",
+            f"active_sessions {session_stats.get('active_sessions', 0)}",
+            
+            "# HELP rate_limited_requests Number of rate limited requests",
+            "# TYPE rate_limited_requests counter",
+            f"rate_limited_requests {rate_limit_stats.get('limited_requests', 0)}",
+            
+            "# HELP postgres_cache_hits PostgreSQL cache hits",
+            "# TYPE postgres_cache_hits counter",
+            f"postgres_cache_hits {postgres_stats.get('hits', 0)}",
+            
+            "# HELP mongodb_cache_hits MongoDB cache hits",
+            "# TYPE mongodb_cache_hits counter",
+            f"mongodb_cache_hits {mongodb_stats.get('hits', 0)}",
+            
+            "# HELP message_queue_size Current message queue size",
+            "# TYPE message_queue_size gauge",
+            f"message_queue_size {broker_stats.get('queue_size', 0)}",
+            
+            "# HELP processed_events Total number of processed events",
+            "# TYPE processed_events counter",
+            f"processed_events {event_stats.get('processed_events', 0)}",
+            
+            "# HELP prometheus_cache_hits Prometheus cache hits",
+            "# TYPE prometheus_cache_hits counter",
+            f"prometheus_cache_hits {prometheus_stats.get('hits', 0)}",
+        ]
+        
+        return JSONResponse(content="\n".join(metrics_data), media_type="text/plain")
+    except Exception as e:
+        return JSONResponse(content=f"# ERROR: {str(e)}", media_type="text/plain")
+
+
 @app.get("/demo")
 async def demo():
     """Ultra-advanced demo endpoint"""
