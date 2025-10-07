@@ -8,7 +8,14 @@ Integrates with the new organized Backend services
 
 class MockRouter:
     """Mock router for compatibility"""
-    pass
+    def __init__(self):
+        self.routes = []  # FastAPI routers need a routes attribute
+    
+    def add_api_route(self, *args, **kwargs):
+        pass
+    
+    def include_router(self, *args, **kwargs):
+        pass
 
 class MockMiddleware:
     """Mock middleware for compatibility"""
@@ -61,6 +68,19 @@ class MockManager:
     
     async def get_session_stats(self):
         return {"mock": True}
+    
+    # Additional methods that might be called
+    async def ai_powered_cache_decision(self, *args, **kwargs):
+        return {"mock": True}
+    
+    async def route_global_request(self, *args, **kwargs):
+        return None
+    
+    async def ultra_secure_authentication(self, *args, **kwargs):
+        return {"authenticated": False}
+    
+    async def generate_business_insights(self, *args, **kwargs):
+        return []
 
 # Create mock instances for all the required imports
 redis_router = MockRouter()
