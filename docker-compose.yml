@@ -153,6 +153,45 @@ services:
           memory: 1G
           cpus: '0.5'
 
+  redis:
+    image: redis:latest
+    container_name: CC-REDIS
+    ports:
+      - "6379:6379"
+    networks:
+      - sec_net
+    # Add password protection and health checks
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redispassword}
+    environment:
+      # Add time synchronization
+      TZ: UTC
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: CC-REDIS-EXPORTER
+    ports:
+      - "9121:9121"
+    environment:
+      REDIS_ADDR: redis://redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispassword}
+      # Add time synchronization
+      TZ: UTC
+    networks:
+      - sec_net
+    depends_on:
+      - redis
+    # Add health checks
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:9121/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: CC-RABBITMQ
