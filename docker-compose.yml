@@ -6,8 +6,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Services/Docker/nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./Services/Docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - D:/PROJETOS/SEC/Services/Docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - D:/PROJETOS/SEC/Services/Docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
       - sec_net
     depends_on:
@@ -30,7 +30,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: ./Services/Docker/frontend/Dockerfile
+      dockerfile: Dockerfile.frontend
     container_name: CC-FRONTEND
     ports:
       - "5174:80"
@@ -46,8 +46,8 @@ services:
 
   fastapi:
     build:
-      context: ./Backend/FastAPI
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.fastapi
     container_name: CC-FASTAPI
     ports:
       - "8000:8000"
@@ -71,8 +71,8 @@ services:
 
   nestjs:
     build:
-      context: ./Backend/NestJS
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.nestjs
     container_name: CC-NESTJS
     environment:
       PORT: ${NESTJS_PORT:-3000}
@@ -212,8 +212,8 @@ services:
       RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbitmq_management path_prefix /rabbitmq"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      - ./Docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-      - ./Docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - D:/PROJETOS/SEC/Services/Docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - D:/PROJETOS/SEC/Services/Docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
     ports:
       - "5672:5672"   # AMQP
       - "15672:15672" # Management UI
@@ -248,8 +248,8 @@ services:
       TZ: UTC
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./Docker/grafana/provisioning:/etc/grafana/provisioning
-      - ./Docker/grafana/dashboards:/var/lib/grafana/dashboards
+      - D:/PROJETOS/SEC/Services/Docker/grafana/provisioning:/etc/grafana/provisioning
+      - D:/PROJETOS/SEC/Services/Docker/grafana/dashboards:/var/lib/grafana/dashboards
     networks:
       - sec_net
     # Add health checks
