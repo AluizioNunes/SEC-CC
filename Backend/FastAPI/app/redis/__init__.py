@@ -3,22 +3,20 @@ Redis Integration Package for FastAPI
 Integrates with the new organized Backend services
 """
 
+from fastapi import APIRouter
+
+# Create real FastAPI routers with the correct prefix and tags
+redis_router = APIRouter(prefix="/redis-advanced", tags=["redis-advanced"])
+advanced_demo_router = APIRouter(prefix="/redis-advanced", tags=["redis-advanced"])
+
 # For compatibility with the existing FastAPI code, create mock objects for all imports
 # These are placeholders to make the FastAPI app run without errors
 
-class MockRouter:
-    """Mock router for compatibility"""
-    def __init__(self):
-        self.routes = []  # FastAPI routers need a routes attribute
-    
-    def add_api_route(self, *args, **kwargs):
-        pass
-    
-    def include_router(self, *args, **kwargs):
-        pass
-
 class MockMiddleware:
     """Mock middleware for compatibility"""
+    def __init__(self):
+        pass
+    
     async def __call__(self, request, call_next):
         return await call_next(request)
 
@@ -81,10 +79,12 @@ class MockManager:
     
     async def generate_business_insights(self, *args, **kwargs):
         return []
+    
+    # Specific methods called in lifespan
+    async def initialize_security_system(self):
+        pass
 
 # Create mock instances for all the required imports
-redis_router = MockRouter()
-advanced_demo_router = MockRouter()
 global_rate_limiting_middleware = MockMiddleware()
 session_middleware = MockMiddleware()
 request_logging_middleware = MockMiddleware()
