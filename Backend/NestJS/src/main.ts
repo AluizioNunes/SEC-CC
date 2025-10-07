@@ -1,6 +1,8 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { Controller, Get, Module } from '@nestjs/common';
+import { Controller, Get, Module, Res } from '@nestjs/common';
+import { Response } from 'express';
+import * as client from 'prom-client';
 
 @Controller()
 class AppController {
@@ -21,6 +23,19 @@ class AppController {
       host: process.env.REDIS_HOST || 'redis',
       port: process.env.REDIS_PORT || '6379'
     };
+  }
+
+  @Get('metrics')
+  async metrics(@Res() res: Response) {
+    // Register some default metrics
+    client.collectDefaultMetrics({ register: client.register });
+
+    // Get metrics as a string
+    const metrics = await client.register.metrics();
+    
+    // Send the metrics as plain text response
+    res.set('Content-Type', client.register.contentType);
+    res.send(metrics);
   }
 }
 

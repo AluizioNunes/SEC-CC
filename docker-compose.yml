@@ -50,6 +50,7 @@ services:
       - sec_net
     depends_on:
       - redis
+      - redis-exporter
 
   nestjs:
     build:
@@ -66,6 +67,7 @@ services:
       - sec_net
     depends_on:
       - redis
+      - redis-exporter
 
   postgres:
     image: postgres:17.6-alpine
@@ -81,6 +83,18 @@ services:
     networks:
       - sec_net
 
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: CC-POSTGRES-EXPORTER
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"
+    networks:
+      - sec_net
+    depends_on:
+      - postgres
+
   redis:
     image: redis:latest
     container_name: CC-REDIS
@@ -88,6 +102,18 @@ services:
       - "6379:6379"
     networks:
       - sec_net
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: CC-REDIS-EXPORTER
+    ports:
+      - "9121:9121"
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    networks:
+      - sec_net
+    depends_on:
+      - redis
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
@@ -105,6 +131,20 @@ services:
       - "15672:15672" # Management UI
     networks:
       - sec_net
+
+  rabbitmq-exporter:
+    image: kbudde/rabbitmq-exporter:latest
+    container_name: CC-RABBITMQ-EXPORTER
+    ports:
+      - "9419:9419"
+    environment:
+      RABBIT_URL: http://rabbitmq:15672
+      RABBIT_USER: ${RABBITMQ_USER:-admin}
+      RABBIT_PASSWORD: ${RABBITMQ_PASSWORD:-admin123}
+    networks:
+      - sec_net
+    depends_on:
+      - rabbitmq
 
   grafana:
     image: grafana/grafana:latest
@@ -130,6 +170,18 @@ services:
       - "27017:27017"
     networks:
       - sec_net
+
+  mongodb-exporter:
+    image: percona/mongodb_exporter:latest
+    container_name: CC-MONGODB-EXPORTER
+    ports:
+      - "9216:9216"
+    environment:
+      MONGODB_URI: mongodb://mongodb:27017/${MONGO_INITDB_DATABASE}
+    networks:
+      - sec_net
+    depends_on:
+      - mongodb
 
   prometheus:
     image: prom/prometheus:latest
@@ -856,7 +908,22 @@ configs:
           static_configs:
             - targets: ['nestjs:3000']
           metrics_path: '/metrics'
-
+          
+        - job_name: 'redis'
+          static_configs:
+            - targets: ['redis-exporter:9121']
+            
+        - job_name: 'postgresql'
+          static_configs:
+            - targets: ['postgres-exporter:9187']
+            
+        - job_name: 'mongodb'
+          static_configs:
+            - targets: ['mongodb-exporter:9216']
+            
+        - job_name: 'rabbitmq'
+          static_configs:
+            - targets: ['rabbitmq-exporter:9419']
   loki_config:
     content: |
       auth_enabled: false
