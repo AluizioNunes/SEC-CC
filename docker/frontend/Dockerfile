@@ -21,7 +21,7 @@ COPY public ./public
 ARG NODE_ENV=production
 ARG VITE_API_URL=http://localhost:8000
 ARG VITE_NESTJS_URL=http://localhost:3000
-ARG VITE_FRONTEND_URL=http://localhost:5173
+ARG VITE_FRONTEND_URL=http://localhost:5174
 
 ENV NODE_ENV=${NODE_ENV}
 ENV VITE_API_URL=${VITE_API_URL}
