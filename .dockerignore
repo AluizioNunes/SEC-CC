@@ -63,7 +63,6 @@ configure-keys.ps1
 test-*.sh
 
 # Large directories that aren't needed for frontend build
-Backend
 services
 scaling-config
 edge-nodes
