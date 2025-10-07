@@ -6,8 +6,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - D:/PROJETOS/SEC/Services/Docker/nginx/conf.d:/etc/nginx/conf.d:ro
-      - D:/PROJETOS/SEC/Services/Docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./Services/Docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./Services/Docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
       - sec_net
     depends_on:
@@ -212,8 +212,8 @@ services:
       # RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS removido devido a incompatibilidade
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      - D:/PROJETOS/SEC/Services/Docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-      - D:/PROJETOS/SEC/Services/Docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./Services/Docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./Services/Docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
     ports:
       - "5672:5672"   # AMQP
       - "15672:15672" # Management UI
@@ -248,8 +248,8 @@ services:
       TZ: UTC
     volumes:
       - grafana_data:/var/lib/grafana
-      - D:/PROJETOS/SEC/Services/Docker/grafana/provisioning:/etc/grafana/provisioning
-      - D:/PROJETOS/SEC/Services/Docker/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./Services/Docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./Services/Docker/grafana/dashboards:/var/lib/grafana/dashboards
     networks:
       - sec_net
     # Add health checks
