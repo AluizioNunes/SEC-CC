@@ -1,17 +1,21 @@
-# Frontend builder - Simplified and robust build process
+# Frontend builder - Optimized build process
 FROM node:20-alpine AS builder
 
 # Set working directory
 WORKDIR /app
 
 # Copy package files first for better layer caching
-COPY package.json package-lock.json* ./
+COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --verbose --no-audit --no-fund
+RUN npm ci --prefer-offline --no-audit --no-fund
 
-# Copy source code
-COPY . .
+# Copy only necessary source files
+COPY src ./src
+COPY index.html .
+COPY tsconfig*.json ./
+COPY vite.config.ts ./
+COPY public ./public
 
 # Set build arguments as environment variables
 ARG NODE_ENV=production
@@ -24,8 +28,8 @@ ENV VITE_API_URL=${VITE_API_URL}
 ENV VITE_NESTJS_URL=${VITE_NESTJS_URL}
 ENV VITE_FRONTEND_URL=${VITE_FRONTEND_URL}
 
-# Build the application
-RUN npm run build
+# Build the application with timeout protection
+RUN timeout 300 npm run build
 
 # Production stage - serve with nginx
 FROM nginx:alpine AS production
@@ -39,11 +43,8 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy nginx configuration
 COPY docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Set proper permissions
-RUN chown -R nginx:nginx /usr/share/nginx/html && \
-    chown -R nginx:nginx /var/cache/nginx && \
-    chown -R nginx:nginx /var/log/nginx && \
-    chown -R nginx:nginx /etc/nginx/conf.d
+# Set proper permissions (simplified to avoid hanging)
+RUN chown -R nginx:nginx /usr/share/nginx/html
 
 # Switch to non-root user
 USER nginx

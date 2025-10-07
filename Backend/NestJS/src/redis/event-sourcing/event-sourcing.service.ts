@@ -1,7 +1,7 @@
-"""
-Event Sourcing for NestJS
-Redis Streams-based event sourcing
-"""
+/**
+ * Event Sourcing for NestJS
+ * Redis Streams-based event sourcing
+ */
 import { Injectable } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
@@ -54,20 +54,20 @@ export class EventSourcingService {
     };
 
     // Publish to main events stream
-    await this.redis.xadd(`${this.eventsPrefix}:main`, '*', event);
+    await this.redis.xadd(`${this.eventsPrefix}:main`, '*', JSON.stringify(event));
 
     // Publish to entity-specific stream if entity info provided
     if (entityId && entityType) {
       await this.redis.xadd(
         `${this.eventsPrefix}:entity:${entityType}:${entityId}`,
         '*',
-        event
+        JSON.stringify(event)
       );
     }
 
     // Publish to user-specific stream if user info provided
     if (userId) {
-      await this.redis.xadd(`${this.eventsPrefix}:user:${userId}`, '*', event);
+      await this.redis.xadd(`${this.eventsPrefix}:user:${userId}`, '*', JSON.stringify(event));
     }
 
     return event.eventId;
@@ -95,7 +95,7 @@ export class EventSourcingService {
 
     while (true) {
       try {
-        const messages = await this.redis.xreadgroup(
+        const messages: any = await this.redis.xreadgroup(
           'GROUP', groupName, consumerName,
           'STREAMS', streamKey, '>'
         );
@@ -103,13 +103,14 @@ export class EventSourcingService {
         if (messages && messages[0] && messages[0][1]) {
           for (const [messageId, messageData] of messages[0][1]) {
             try {
+              const event: Event = JSON.parse(messageData[1]); // Parse the JSON string
+              
               // Filter by event type if specified
-              if (eventTypes && !eventTypes.includes(messageData.eventType)) {
+              if (eventTypes && !eventTypes.includes(event.eventType)) {
                 await this.redis.xack(streamKey, groupName, messageId);
                 continue;
               }
 
-              const event: Event = messageData as Event;
               await callback(event);
               await this.redis.xack(streamKey, groupName, messageId);
             } catch (error) {
@@ -134,8 +135,8 @@ export class EventSourcingService {
     const streamKey = `${this.eventsPrefix}:entity:${entityType}:${entityId}`;
 
     try {
-      const events = await this.redis.xrange(streamKey, startTime, '+');
-      return events.map(([_, eventData]) => eventData as Event);
+      const events = await this.redis.xrange(streamKey, startTime.toString(), '+');
+      return events.map(([_, eventData]) => JSON.parse(eventData[1]) as Event);
     } catch (error) {
       console.error('Event replay error:', error);
       return [];
@@ -146,7 +147,7 @@ export class EventSourcingService {
     const pattern = `${this.eventsPrefix}:*`;
     const streams = await this.redis.keys(pattern);
 
-    const stats = {
+    const stats: { totalStreams: number; eventsPublished: number; streams: Record<string, { length: number }> } = {
       totalStreams: streams.length,
       eventsPublished: 0,
       streams: {}

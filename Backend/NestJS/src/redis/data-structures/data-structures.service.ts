@@ -1,7 +1,7 @@
-"""
-Advanced Data Structures for NestJS
-Redis advanced data structures utilities
-"""
+/**
+ * Advanced Data Structures for NestJS
+ * Redis advanced data structures utilities
+ */
 import { Injectable } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
@@ -42,8 +42,9 @@ export class AdvancedDataStructuresService {
     return new Set(members.map(member => JSON.parse(member)));
   }
 
-  async setIsMember(key: string, member: any): Promise<boolean> {
-    return await this.redis.sismember(`nestjs:set:${key}`, JSON.stringify(member));
+  async setIsMember(key: string, member: any): Promise<number> {
+    const result = await this.redis.sismember(`nestjs:set:${key}`, JSON.stringify(member));
+    return result;
   }
 
   // Sorted Set operations (Leaderboards)
@@ -66,7 +67,8 @@ export class AdvancedDataStructuresService {
   }
 
   async sortedSetIncrementScore(key: string, member: any, increment: number): Promise<number> {
-    return await this.redis.zincrby(`nestjs:zset:${key}`, increment, JSON.stringify(member));
+    const result = await this.redis.zincrby(`nestjs:zset:${key}`, increment, JSON.stringify(member));
+    return parseFloat(result);
   }
 
   // List operations (Queues)
@@ -105,7 +107,7 @@ export class AdvancedDataStructuresService {
     radiusKm: number,
     unit: 'km' | 'm' | 'mi' | 'ft' = 'km'
   ): Promise<Array<{member: string; distance: number}>> {
-    const results = await this.redis.georadius(
+    const results: any[] = await this.redis.georadius(
       `nestjs:geo:${key}`,
       longitude,
       latitude,
@@ -114,9 +116,9 @@ export class AdvancedDataStructuresService {
       'WITHDIST'
     );
 
-    return results.map(([member, distance]) => ({
-      member,
-      distance: parseFloat(distance)
+    return results.map((result: any[]) => ({
+      member: result[0],
+      distance: parseFloat(result[1])
     }));
   }
 
@@ -131,7 +133,7 @@ export class AdvancedDataStructuresService {
       'nestjs:geo:*'
     ];
 
-    const stats = {};
+    const stats: Record<string, {count: number; totalSize: number}> = {};
 
     for (const pattern of patterns) {
       const keys = await this.redis.keys(pattern);

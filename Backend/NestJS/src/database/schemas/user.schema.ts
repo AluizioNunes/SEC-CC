@@ -6,13 +6,13 @@ export type UserDocument = User & Document;
 @Schema({ collection: 'user_preferences' })
 export class User {
   @Prop({ required: true })
-  userId: string;
+  userId!: string;
 
   @Prop({ type: Object, default: {} })
-  preferences: Record<string, any>;
+  preferences!: Record<string, any>;
 
   @Prop({ default: Date.now })
-  created_at: Date;
+  created_at!: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

@@ -1,7 +1,7 @@
-"""
-Hybrid Message Broker for NestJS
-RabbitMQ + Redis Streams integration
-"""
+/**
+ * Hybrid Message Broker for NestJS
+ * RabbitMQ + Redis Streams integration
+ */
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
@@ -22,25 +22,33 @@ export enum MessageBrokerType {
 
 @Injectable()
 export class HybridBrokerService implements OnModuleDestroy {
-  private rabbitmqConnection: amqp.Connection | null = null;
-  private rabbitmqChannel: amqp.Channel | null = null;
+  private rabbitmqConnection: any = null;
+  private rabbitmqChannel: any = null;
   private readonly redisStreamsPrefix = 'nestjs_messages';
 
   constructor(@InjectRedis() private readonly redis: Redis) {}
 
   async onModuleDestroy() {
-    if (this.rabbitmqConnection) {
+    if (this.rabbitmqConnection && this.rabbitmqConnection.close) {
       await this.rabbitmqConnection.close();
     }
   }
 
   async initialize() {
-    // Initialize RabbitMQ connection
-    this.rabbitmqConnection = await amqp.connect('amqp://admin:admin123@rabbitmq:5672/');
-    this.rabbitmqChannel = await this.rabbitmqConnection.createChannel();
+    try {
+      // Initialize RabbitMQ connection
+      this.rabbitmqConnection = await amqp.connect('amqp://admin:admin123@rabbitmq:5672/');
+      if (this.rabbitmqConnection) {
+        this.rabbitmqChannel = await this.rabbitmqConnection.createChannel();
 
-    // Declare exchange
-    await this.rabbitmqChannel.assertExchange('nestjs_exchange', 'direct', { durable: true });
+        // Declare exchange
+        if (this.rabbitmqChannel && this.rabbitmqChannel.assertExchange) {
+          await this.rabbitmqChannel.assertExchange('nestjs_exchange', 'direct', { durable: true });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to initialize RabbitMQ connection:', error);
+    }
   }
 
   async publishMessage(
@@ -63,17 +71,19 @@ export class HybridBrokerService implements OnModuleDestroy {
 
     if (brokerType === MessageBrokerType.REDIS || brokerType === MessageBrokerType.HYBRID) {
       // Publish to Redis Streams
-      await this.redis.xadd(`${this.redisStreamsPrefix}:${routingKey}`, '*', enrichedMessage);
+      await this.redis.xadd(`${this.redisStreamsPrefix}:${routingKey}`, '*', JSON.stringify(enrichedMessage));
     }
 
     if (brokerType === MessageBrokerType.RABBITMQ || brokerType === MessageBrokerType.HYBRID) {
       // Publish to RabbitMQ
-      await this.rabbitmqChannel!.publish(
-        'nestjs_exchange',
-        routingKey,
-        Buffer.from(JSON.stringify(enrichedMessage)),
-        { persistent: true, priority: priority }
-      );
+      if (this.rabbitmqChannel && this.rabbitmqChannel.publish) {
+        this.rabbitmqChannel.publish(
+          'nestjs_exchange',
+          routingKey,
+          Buffer.from(JSON.stringify(enrichedMessage)),
+          { persistent: true, priority: priority }
+        );
+      }
     }
 
     return messageId;
@@ -107,7 +117,7 @@ export class HybridBrokerService implements OnModuleDestroy {
 
     while (true) {
       try {
-        const messages = await this.redis.xreadgroup(
+        const messages: any = await this.redis.xreadgroup(
           'GROUP', groupName, consumerName,
           'STREAMS', streamKey, '>'
         );
@@ -115,7 +125,8 @@ export class HybridBrokerService implements OnModuleDestroy {
         if (messages && messages[0] && messages[0][1]) {
           for (const [messageId, messageData] of messages[0][1]) {
             try {
-              await callback(messageData);
+              const parsedMessage = JSON.parse(messageData[1]);
+              await callback(parsedMessage);
               await this.redis.xack(streamKey, groupName, messageId);
             } catch (error) {
               console.error('Error processing Redis message:', error);
@@ -132,27 +143,29 @@ export class HybridBrokerService implements OnModuleDestroy {
   }
 
   private async consumeRabbitMQQueue(routingKey: string, callback: (message: any) => Promise<void>) {
+    if (!this.rabbitmqChannel) return;
+
     const queueName = `nestjs_${routingKey}`;
 
     // Declare queue
-    const queue = await this.rabbitmqChannel!.assertQueue(queueName, {
+    const queue = await this.rabbitmqChannel.assertQueue(queueName, {
       durable: true,
       arguments: { 'x-max-priority': 4 }
     });
 
     // Bind to exchange
-    await this.rabbitmqChannel!.bindQueue(queue.queue, 'nestjs_exchange', routingKey);
+    await this.rabbitmqChannel.bindQueue(queue.queue, 'nestjs_exchange', routingKey);
 
     // Start consuming
-    await this.rabbitmqChannel!.consume(queue.queue, async (msg) => {
+    await this.rabbitmqChannel.consume(queue.queue, async (msg: amqp.ConsumeMessage | null) => {
       if (msg) {
         try {
           const messageData = JSON.parse(msg.content.toString());
           await callback(messageData);
-          this.rabbitmqChannel!.ack(msg);
+          this.rabbitmqChannel.ack(msg);
         } catch (error) {
           console.error('Error processing RabbitMQ message:', error);
-          this.rabbitmqChannel!.nack(msg, false, true); // Requeue
+          this.rabbitmqChannel.nack(msg, false, true); // Requeue
         }
       }
     });

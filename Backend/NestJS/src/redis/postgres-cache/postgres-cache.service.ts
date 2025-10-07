@@ -1,7 +1,7 @@
-"""
-PostgreSQL Cache Integration for NestJS
-Advanced PostgreSQL query caching with Redis
-"""
+/**
+ * PostgreSQL Cache Integration for NestJS
+ * Advanced PostgreSQL query caching with Redis
+ */
 import { Injectable } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';

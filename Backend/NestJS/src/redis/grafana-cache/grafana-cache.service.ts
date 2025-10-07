@@ -1,7 +1,7 @@
-"""
-Grafana Cache Integration for NestJS
-Dashboard and query caching
-"""
+/**
+ * Grafana Cache Integration for NestJS
+ * Dashboard and query caching
+ */
 import { Injectable } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';

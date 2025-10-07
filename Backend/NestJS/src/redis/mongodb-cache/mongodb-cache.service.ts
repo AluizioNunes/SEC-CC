@@ -1,7 +1,7 @@
-"""
-MongoDB Cache Integration for NestJS
-Advanced MongoDB aggregation caching with Redis
-"""
+/**
+ * MongoDB Cache Integration for NestJS
+ * Advanced MongoDB aggregation caching with Redis
+ */
 import { Injectable } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';

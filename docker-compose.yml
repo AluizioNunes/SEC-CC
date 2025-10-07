@@ -32,6 +32,12 @@ services:
     networks:
       - sec_net
     restart: unless-stopped
+    # Add resource limits to prevent hanging builds
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
 
   fastapi:
     build:

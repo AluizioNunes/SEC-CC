@@ -117,11 +117,14 @@ export class RedisController {
     priority?: string;
     brokerType?: string;
   }) {
+    const priority = body.priority ? MessagePriority[body.priority as keyof typeof MessagePriority] : MessagePriority.NORMAL;
+    const brokerType = body.brokerType ? MessageBrokerType[body.brokerType as keyof typeof MessageBrokerType] : MessageBrokerType.HYBRID;
+    
     const messageId = await this.hybridBrokerService.publishMessage(
       body.message,
       body.routingKey,
-      MessagePriority[body.priority || 'NORMAL'],
-      MessageBrokerType[body.brokerType || 'HYBRID']
+      priority,
+      brokerType
     );
     return { messageId, routingKey: body.routingKey, priority: body.priority };
   }
