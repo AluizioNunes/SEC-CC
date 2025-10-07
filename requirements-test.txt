@@ -1,0 +1,29 @@
+pytest==7.4.0
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+httpx==0.24.1
+pytest-mock==3.11.1
+pytest-benchmark==4.0.0
+pytest-timeout==2.1.0
+
+# Security testing
+bandit==1.7.5
+safety==2.3.5
+sqlalchemy==2.0.19  # Para testes de SQL injection
+bcrypt==4.0.1      # Para testes de senha
+
+# Code quality
+black==23.7.0
+isort==5.12.0
+flake8==6.0.0
+mypy==1.5.1
+
+# Performance testing
+locust==2.16.1
+
+# Integration testing
+requests==2.31.0
+
+# Test utilities
+faker==19.2.0
+factory-boy==3.3.0

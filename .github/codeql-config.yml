@@ -1,0 +1,39 @@
+name: "SEC Application Security Configuration"
+
+disable-default-queries: false
+
+queries:
+  - uses: security-and-quality
+  - uses: security-experimental
+
+paths-ignore:
+  - node_modules
+  - dist
+  - build
+  - coverage
+  - .git
+  - "**/*.test.*"
+  - "**/*.spec.*"
+
+paths:
+  - Backend/FastAPI
+  - Backend/NestJS
+  - src
+
+rules:
+  - id: python-security
+    languages: [python]
+    queries:
+      - security-and-quality
+      - security-experimental
+
+  - id: javascript-security
+    languages: [javascript, typescript]
+    queries:
+      - security-and-quality
+      - security-experimental
+
+  - id: dockerfile-security
+    languages: [dockerfile]
+    queries:
+      - security-and-quality
