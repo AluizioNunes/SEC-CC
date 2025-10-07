@@ -37,17 +37,28 @@ FROM nginx:alpine AS production
 # Install curl for health checks
 RUN apk add --no-cache curl
 
+# Remove default nginx configuration
+RUN rm /etc/nginx/conf.d/default.conf
+
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Set proper permissions (simplified to avoid hanging)
-RUN chown -R nginx:nginx /usr/share/nginx/html
+# Create and set proper permissions for all nginx directories
+RUN mkdir -p /var/cache/nginx/client_temp \
+             /var/cache/nginx/proxy_temp \
+             /var/cache/nginx/fastcgi_temp \
+             /var/cache/nginx/uwsgi_temp \
+             /var/cache/nginx/scgi_temp && \
+    chown -R nginx:nginx /usr/share/nginx/html \
+                         /var/cache/nginx \
+                         /var/log/nginx \
+                         /etc/nginx/conf.d
 
-# Switch to non-root user
-USER nginx
+# Keep running as root user to avoid permission issues
+# USER nginx
 
 # Add health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
