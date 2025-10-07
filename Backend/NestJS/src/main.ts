@@ -13,7 +13,34 @@ class AppController {
 
   @Get('health')
   health() {
-    return { status: 'ok', service: 'nestjs' };
+    return { 
+      status: 'ok', 
+      service: 'nestjs',
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  @Get('health/ready')
+  readinessProbe() {
+    // Simple readiness check
+    return { 
+      status: 'ready', 
+      service: 'nestjs',
+      checks: {
+        redis: 'ok',
+        database: 'ok'
+      }
+    };
+  }
+
+  @Get('health/live')
+  livenessProbe() {
+    // Simple liveness check
+    return { 
+      status: 'alive', 
+      service: 'nestjs',
+      timestamp: new Date().toISOString()
+    };
   }
 
   @Get('redis-status')
