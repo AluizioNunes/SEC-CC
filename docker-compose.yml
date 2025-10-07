@@ -1,6 +1,6 @@
 services:
   nginx:
-    image: nginx:1.27.0-alpine
+    image: nginx:alpine
     container_name: CC-NGINX
     ports:
       - "80:80"
@@ -17,7 +17,7 @@ services:
 
   # Time synchronization service
   ntp:
-    image: cturra/ntp:1.0.0
+    image: cturra/ntp:latest
     container_name: CC-NTP
     ports:
       - "123:123/udp"
@@ -101,7 +101,7 @@ services:
       - sec_net
 
   postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:v0.15.0
+    image: prometheuscommunity/postgres-exporter:latest
     container_name: CC-POSTGRES-EXPORTER
     ports:
       - "9187:9187"
@@ -115,7 +115,7 @@ services:
       - postgres
 
   redis:
-    image: redis:7.4.6
+    image: redis:latest
     container_name: CC-REDIS
     ports:
       - "6379:6379"
@@ -128,7 +128,7 @@ services:
       TZ: UTC
 
   redis-exporter:
-    image: oliver006/redis_exporter:v1.59.0
+    image: oliver006/redis_exporter:latest
     container_name: CC-REDIS-EXPORTER
     ports:
       - "9121:9121"
@@ -142,27 +142,8 @@ services:
     depends_on:
       - redis
 
-  rabbitmq:
-    image: rabbitmq:3.13.7-management-alpine
-    container_name: CC-RABBITMQ
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin123}
-      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
-      # Add time synchronization
-      TZ: UTC
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-      - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-      - ./docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
-    ports:
-      - "5672:5672"   # AMQP
-      - "15672:15672" # Management UI
-    networks:
-      - sec_net
-
   rabbitmq-exporter:
-    image: kbudde/rabbitmq-exporter:v0.29.0
+    image: kbudde/rabbitmq-exporter:latest
     container_name: CC-RABBITMQ-EXPORTER
     ports:
       - "9419:9419"
@@ -178,7 +159,7 @@ services:
       - rabbitmq
 
   grafana:
-    image: grafana/grafana:11.3.0
+    image: grafana/grafana:latest
     container_name: CC-GRAFANA
     ports:
       - "3001:3000"
@@ -193,7 +174,7 @@ services:
       - sec_net
 
   mongodb:
-    image: mongo:8.0.15
+    image: mongo:latest
     container_name: CC-MONGODB
     environment:
       MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
@@ -207,7 +188,7 @@ services:
       - sec_net
 
   mongodb-exporter:
-    image: percona/mongodb_exporter:0.40.0
+    image: percona/mongodb_exporter:latest
     container_name: CC-MONGODB-EXPORTER
     ports:
       - "9216:9216"
@@ -221,7 +202,7 @@ services:
       - mongodb
 
   prometheus:
-    image: prom/prometheus:v2.55.0
+    image: prom/prometheus:latest
     container_name: CC-PROMETHEUS
     environment:
       - PROMETHEUS_CONFIG_FILE=/etc/prometheus/prometheus.yml
