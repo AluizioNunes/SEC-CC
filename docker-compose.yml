@@ -6,7 +6,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./Docker/nginx/conf.d:/etc/nginx/conf.d:ro
     networks:
       - sec_net
     depends_on:
@@ -29,7 +29,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: ./docker/frontend/Dockerfile
+      dockerfile: ./Docker/frontend/Dockerfile
       target: production
       args:
         - NODE_ENV=production
@@ -64,6 +64,9 @@ services:
     # Add time synchronization and health checks
     environment:
       - TZ=UTC
+      - SERVICE_NAME=fastapi
+      - HOST=fastapi
+      - PORT=8000
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
       interval: 30s
@@ -80,6 +83,8 @@ services:
       PORT: ${NESTJS_PORT:-3000}
       REDIS_HOST: redis
       REDIS_PORT: ${REDIS_PORT:-6379}
+      SERVICE_NAME: nestjs
+      HOST: nestjs
       # Add time synchronization
       TZ: UTC
     ports:
@@ -104,6 +109,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      SERVICE_NAME: postgresql
+      HOST: postgres
       # Add time synchronization and performance optimizations
       TZ: UTC
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
@@ -131,6 +138,8 @@ services:
     container_name: CC-MONGODB
     environment:
       MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      SERVICE_NAME: mongodb
+      HOST: mongodb
       # Add time synchronization and performance optimizations
       TZ: UTC
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-root}
@@ -163,6 +172,8 @@ services:
     # Add password protection and health checks
     command: redis-server --requirepass ${REDIS_PASSWORD:-redispassword}
     environment:
+      SERVICE_NAME: redis
+      HOST: redis
       # Add time synchronization
       TZ: UTC
     healthcheck:
@@ -199,13 +210,15 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-secure_password_change_me}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+      SERVICE_NAME: rabbitmq
+      HOST: rabbitmq
       # Add time synchronization and performance optimizations
       TZ: UTC
       RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbitmq_management path_prefix /rabbitmq"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-      - ./docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./Docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./Docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
     ports:
       - "5672:5672"   # AMQP
       - "15672:15672" # Management UI
@@ -235,9 +248,13 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_USERS_AUTO_ASSIGN_ORG: "true"
       GF_USERS_AUTO_ASSIGN_ORG_ROLE: "Admin"
+      SERVICE_NAME: grafana
+      HOST: grafana
       TZ: UTC
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./Docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./Docker/grafana/dashboards:/var/lib/grafana/dashboards
     networks:
       - sec_net
     # Add health checks
@@ -252,6 +269,8 @@ services:
     container_name: CC-PROMETHEUS
     environment:
       - PROMETHEUS_CONFIG_FILE=/etc/prometheus/prometheus.yml
+      - SERVICE_NAME: prometheus
+      - HOST: prometheus
       # Add time synchronization and relax time constraints
       - TZ=UTC
     configs:
@@ -497,8 +516,8 @@ services:
   #     - "443:443"
   #     - "80:80"
   #   volumes:
-  #     - ./docker/global-lb/nginx.conf:/etc/nginx/nginx.conf:ro
-  #     - ./docker/global-lb/ssl:/etc/nginx/ssl:ro
+  #     - ./Docker/global-lb/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./Docker/global-lb/ssl:/etc/nginx/ssl:ro
   #   networks:
   #     - sec_net
   #   depends_on:
@@ -601,7 +620,7 @@ services:
   #   ports:
   #     - "8091:8091"
   #   volumes:
-  #     - ./docker/observability:/etc/agent
+  #     - ./Docker/observability:/etc/agent
   #   command: --config.file=/etc/agent/config.yml --server.http.listen-port=8091
   #   networks:
   #     - sec_net

@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { Controller, Get, Module, Res } from '@nestjs/common';
 import { Response } from 'express';
 import * as client from 'prom-client';
+import { ServiceRegistrationService } from './service-registration/service-registration.service';
 
 // Create a single registry instance to avoid duplicate metrics
 const register = new client.Registry();
@@ -82,6 +83,10 @@ class AppModule {}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  // Get service registration service
+  const serviceRegistrationService = app.get(ServiceRegistrationService);
+  
   await app.listen(process.env.PORT || 3000, '0.0.0.0');
   console.log(`NestJS básico rodando na porta ${process.env.PORT || 3000}`);
 }

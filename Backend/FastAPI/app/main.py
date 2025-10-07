@@ -35,6 +35,15 @@ from .redis import (
     EventType
 )
 
+# Import service registration
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from Backend.Service_Registration import register_current_service, unregister_current_service
+
+# Import message broker
+from Backend.Message_Broker.message_handler import message_handler
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -89,6 +98,14 @@ async def lifespan(app: FastAPI):
         asyncio.create_task(ultra_security_manager.start_continuous_monitoring())
         print("✅ Ultra-Security monitoring active")
 
+        # Register service with service mesh and registry
+        asyncio.create_task(register_current_service())
+        print("✅ Service registration task started")
+
+        # Initialize message handler
+        asyncio.create_task(message_handler.initialize())
+        print("✅ Message handler initialized")
+
         print("✅ All Redis ultra-advanced features initialized successfully")
 
     except Exception as e:
@@ -99,6 +116,10 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     print("🔄 Shutting down ultra-advanced Redis features...")
+
+    # Unregister service
+    await unregister_current_service()
+    print("✅ Service unregistration completed")
 
     # Close database connections
     await postgres_cache_manager.close()
@@ -586,6 +607,25 @@ async def centralized_health_dashboard():
             "error": str(e),
             "timestamp": time.time()
         }
+
+
+@app.post("/test/message")
+async def test_message():
+    """Test endpoint for sending a message through the message broker"""
+    try:
+        # Import message producer
+        from Backend.Message_Broker.message_producer import message_producer
+        
+        # Send a test message
+        await message_producer.send_notification_event(
+            notification_type="test",
+            recipient="test@example.com",
+            message="This is a test message"
+        )
+        
+        return {"status": "success", "message": "Test message sent"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 if __name__ == "__main__":

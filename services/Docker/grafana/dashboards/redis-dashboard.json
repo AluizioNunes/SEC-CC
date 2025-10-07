@@ -1,0 +1,49 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Redis Dashboard",
+    "tags": ["redis", "cache", "database"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 0,
+    "refresh": "5s",
+    "panels": [
+      {
+        "id": 1,
+        "type": "stat",
+        "title": "Redis Uptime",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "redis_uptime_in_seconds",
+            "refId": "A"
+          }
+        ],
+        "datasource": "Prometheus"
+      },
+      {
+        "id": 2,
+        "type": "stat",
+        "title": "Connected Clients",
+        "gridPos": {
+          "x": 6,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "redis_connected_clients",
+            "refId": "A"
+          }
+        ],
+        "datasource": "Prometheus"
+      }
+    ]
+  }
+}
