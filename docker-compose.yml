@@ -207,7 +207,7 @@ services:
       - sec_net
 
   mongodb-exporter:
-    image: percona/mongodb_exporter:latest
+    image: percona/mongodb_exporter:0.40.0
     container_name: CC-MONGODB-EXPORTER
     ports:
       - "9216:9216"
