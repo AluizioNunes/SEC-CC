@@ -142,6 +142,25 @@ services:
     depends_on:
       - redis
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: CC-RABBITMQ
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin123}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+      # Add time synchronization
+      TZ: UTC
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    networks:
+      - sec_net
+
   rabbitmq-exporter:
     image: kbudde/rabbitmq-exporter:latest
     container_name: CC-RABBITMQ-EXPORTER
