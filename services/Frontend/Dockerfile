@@ -4,14 +4,14 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Install deps at runtime to ensure host changes are picked up; alternatively we can use multi-stage
-COPY package.json.frontend ./package.json
-COPY package-lock.json ./
+COPY ../../package.json.frontend ./package.json
+COPY ../../package-lock.json ./
 
 # Install production and dev deps for build (using npm install to avoid cache issues)
 RUN npm ci --prefer-offline --no-audit --no-fund --legacy-peer-deps || npm install --prefer-offline --no-audit --no-fund --legacy-peer-deps
 
 # Copy source
-COPY . .
+COPY ../../. .
 
 # Build on container start so dist is written to the mounted volume
 CMD ["sh", "-c", "npm run build --verbose && tail -f /dev/null"]
