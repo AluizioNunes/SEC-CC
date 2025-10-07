@@ -4,6 +4,17 @@ import { Controller, Get, Module, Res } from '@nestjs/common';
 import { Response } from 'express';
 import * as client from 'prom-client';
 
+// Create a single registry instance to avoid duplicate metrics
+const register = new client.Registry();
+
+// Check if metrics are already registered to prevent duplicates
+const registerMetrics = () => {
+  // Only register default metrics if they haven't been registered yet
+  if (register.getSingleMetric('process_cpu_user_seconds_total') === undefined) {
+    client.collectDefaultMetrics({ register });
+  }
+};
+
 @Controller()
 class AppController {
   @Get()
@@ -54,14 +65,14 @@ class AppController {
 
   @Get('metrics')
   async metrics(@Res() res: Response) {
-    // Register some default metrics
-    client.collectDefaultMetrics({ register: client.register });
+    // Register default metrics only once
+    registerMetrics();
 
     // Get metrics as a string
-    const metrics = await client.register.metrics();
+    const metrics = await register.metrics();
     
     // Send the metrics as plain text response
-    res.set('Content-Type', client.register.contentType);
+    res.set('Content-Type', register.contentType);
     res.send(metrics);
   }
 }
