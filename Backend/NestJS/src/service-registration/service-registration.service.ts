@@ -1,9 +1,9 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import * as redis from 'redis';
+import { createClient, RedisClientType } from 'redis';
 
 @Injectable()
 export class ServiceRegistrationService implements OnModuleInit, OnModuleDestroy {
-  private redisClient: redis.RedisClientType;
+  private redisClient: RedisClientType;
   private instanceId: string;
   private serviceName: string;
   private isRegistered = false;
@@ -11,17 +11,21 @@ export class ServiceRegistrationService implements OnModuleInit, OnModuleDestroy
 
   constructor() {
     // Initialize Redis client
-    this.redisClient = redis.createClient({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD,
+    this.redisClient = createClient({
+      socket: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+      },
+      password: process.env.REDIS_PASSWORD || 'redispassword',
     });
 
-    this.redisClient.on('error', (err) => {
+    this.redisClient.on('error', (err: any) => {
       console.error('Redis error:', err);
     });
 
     this.serviceName = 'nestjs'; // Default service name
+    this.instanceId = '';
+    this.heartbeatInterval = setTimeout(() => {}, 0) as NodeJS.Timeout;
   }
 
   async onModuleInit() {
@@ -81,14 +85,14 @@ export class ServiceRegistrationService implements OnModuleInit, OnModuleDestroy
       };
 
       // Store in Redis with 24-hour expiration
-      await this.redisClient.setex(
+      await this.redisClient.setEx(
         `service_registry:service:${this.instanceId}`,
         86400,
         JSON.stringify(registrationData)
       );
 
       // Add to service set
-      await this.redisClient.sadd(
+      await this.redisClient.sAdd(
         `service_registry:services:${this.serviceName}`,
         this.instanceId
       );
@@ -120,14 +124,14 @@ export class ServiceRegistrationService implements OnModuleInit, OnModuleDestroy
       };
 
       // Store in Redis with 24-hour expiration
-      await this.redisClient.setex(
+      await this.redisClient.setEx(
         `service_mesh:instance:${this.instanceId}`,
         86400,
         JSON.stringify(meshData)
       );
 
       // Add to service registry
-      await this.redisClient.sadd(
+      await this.redisClient.sAdd(
         `service_mesh:service:${this.serviceName}`,
         this.instanceId
       );
@@ -145,7 +149,7 @@ export class ServiceRegistrationService implements OnModuleInit, OnModuleDestroy
       }
 
       // Remove from service registry
-      await this.redisClient.srem(
+      await this.redisClient.sRem(
         `service_registry:services:${this.serviceName}`,
         this.instanceId
       );
@@ -154,7 +158,7 @@ export class ServiceRegistrationService implements OnModuleInit, OnModuleDestroy
       await this.redisClient.del(`service_registry:service:${this.instanceId}`);
 
       // Remove from service mesh
-      await this.redisClient.srem(
+      await this.redisClient.sRem(
         `service_mesh:service:${this.serviceName}`,
         this.instanceId
       );
@@ -178,7 +182,7 @@ export class ServiceRegistrationService implements OnModuleInit, OnModuleDestroy
           if (serviceData) {
             const parsedData = JSON.parse(serviceData);
             parsedData.last_heartbeat = Date.now();
-            await this.redisClient.setex(
+            await this.redisClient.setEx(
               `service_registry:service:${this.instanceId}`,
               86400,
               JSON.stringify(parsedData)
@@ -191,7 +195,7 @@ export class ServiceRegistrationService implements OnModuleInit, OnModuleDestroy
             const parsedData = JSON.parse(meshData);
             parsedData.last_heartbeat = Date.now();
             parsedData.load_score = 0.0; // Default load score
-            await this.redisClient.setex(
+            await this.redisClient.setEx(
               `service_mesh:instance:${this.instanceId}`,
               86400,
               JSON.stringify(parsedData)
@@ -215,7 +219,7 @@ export class ServiceRegistrationService implements OnModuleInit, OnModuleDestroy
         if (meshData) {
           const parsedData = JSON.parse(meshData);
           parsedData.load_score = loadScore;
-          await this.redisClient.setex(
+          await this.redisClient.setEx(
             `service_mesh:instance:${this.instanceId}`,
             86400,
             JSON.stringify(parsedData)

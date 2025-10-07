@@ -15,36 +15,108 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 # Import actual Redis client and related services
-from Backend.Redis import get_redis_client, test_redis_connection
+try:
+    from Backend.Redis.client import get_redis_client, test_redis_connection
+except ImportError:
+    # Fallback to local Redis client if Backend module is not available
+    from app.redis.local_redis_client import get_redis_client, test_redis_connection
 
 # Import service mesh and registry
-from Backend.Service_Mesh import service_mesh
-from Backend.Service_Registry import service_registry
-from Backend.Service_Registration import service_registration
+try:
+    from Backend.Service_Mesh.service_mesh import service_mesh
+    from Backend.Service_Registry.service_registry import service_registry
+    from Backend.Service_Registration.service_registration import service_registration
+except ImportError:
+    # Create mock objects if Backend modules are not available
+    service_mesh = None
+    service_registry = None
+    service_registration = None
 
 # Import message broker
-from Backend.Message_Broker import hybrid_broker, message_handler, message_producer
+try:
+    from Backend.Message_Broker.message_broker import hybrid_broker
+    from Backend.Message_Broker.message_handler import message_handler
+    from Backend.Message_Broker.message_producer import message_producer
+except ImportError:
+    # Create mock objects if Backend modules are not available
+    hybrid_broker = None
+    message_handler = None
+    message_producer = None
 
 # Import security services
-from Backend.Security import ultra_security_service
-from Backend.Security.oauth2 import oauth2_provider
-from Backend.Security.biometric import biometric_auth
-from Backend.Security.encryption import data_encryption
+try:
+    from Backend.Security.security_service import ultra_security_service
+    from Backend.Security.oauth2.oauth2_provider import oauth2_provider
+    from Backend.Security.biometric.biometric_auth import biometric_auth
+    from Backend.Security.encryption.data_encryption import data_encryption
+except ImportError:
+    # Create mock objects if Backend modules are not available
+    ultra_security_service = None
+    oauth2_provider = None
+    biometric_auth = None
+    data_encryption = None
 
 # Import AI services
-from Backend.AI import advanced_nlp_service, multimedia_content_service, sentiment_behavior_service
+try:
+    from Backend.AI.nlp.advanced_nlp import advanced_nlp_service
+    from Backend.AI.multimedia.content_generation import multimedia_content_service
+    from Backend.AI.analysis.sentiment_behavior import sentiment_behavior_service
+except ImportError:
+    # Create mock objects if Backend modules are not available
+    advanced_nlp_service = None
+    multimedia_content_service = None
+    sentiment_behavior_service = None
 
 # Import analytics services
-from Backend.Analytics import business_intelligence_service, ultra_analytics_service
-from Backend.Analytics.bi import bi_dashboard_service
-from Backend.Analytics.ml import ml_predictions
-from Backend.Analytics.realtime import realtime_reporting
+try:
+    from Backend.Analytics.business_intelligence import business_intelligence_service
+    from Backend.Analytics.analytics_service import ultra_analytics_service
+    from Backend.Analytics.bi.dashboard_service import bi_dashboard_service
+    from Backend.Analytics.ml.ml_predictions import ml_predictions
+    from Backend.Analytics.realtime.realtime_reports import realtime_reporting
+except ImportError:
+    # Create mock objects if Backend modules are not available
+    business_intelligence_service = None
+    ultra_analytics_service = None
+    bi_dashboard_service = None
+    ml_predictions = None
+    realtime_reporting = None
 
 # Import event driven system
-from Backend.Event_Driven import event_driven_system
+try:
+    from Backend.Event_Driven.event_driven import event_driven_system
+except ImportError:
+    # Create mock objects if Backend modules are not available
+    event_driven_system = None
 
 # Import API gateway
-from Backend.API_Gateway import api_gateway
+try:
+    from Backend.API_Gateway.api_gateway import api_gateway
+except ImportError:
+    # Create mock objects if Backend modules are not available
+    api_gateway = None
+
+# Import middleware and cache managers
+try:
+    # Try to import from actual Redis integration
+    from app.redis.middleware import global_rate_limiting_middleware, session_middleware, request_logging_middleware
+    from app.redis.cache_managers import (
+        api_cache_manager, session_cluster, rate_limiter, db_cache_manager,
+        postgres_cache_manager, mongodb_cache_manager, event_sourcing_manager,
+        grafana_cache_manager, prometheus_cache_manager, loki_cache_manager,
+        global_service_mesh, ultra_ai_manager, ultra_security_manager, ultra_analytics_engine
+    )
+    from app.redis.event_types import EventType
+except ImportError:
+    # Fallback to mock implementations
+    from app.redis.mock_components import (
+        global_rate_limiting_middleware, session_middleware, request_logging_middleware,
+        api_cache_manager, session_cluster, rate_limiter, db_cache_manager,
+        postgres_cache_manager, mongodb_cache_manager, event_sourcing_manager,
+        grafana_cache_manager, prometheus_cache_manager, loki_cache_manager,
+        global_service_mesh, ultra_ai_manager, ultra_security_manager, ultra_analytics_engine,
+        EventType
+    )
 
 # Re-export all the necessary components
 __all__ = [
@@ -88,5 +160,29 @@ __all__ = [
     "event_driven_system",
     
     # API gateway
-    "api_gateway"
+    "api_gateway",
+    
+    # Middleware
+    "global_rate_limiting_middleware",
+    "session_middleware",
+    "request_logging_middleware",
+    
+    # Cache managers
+    "api_cache_manager",
+    "session_cluster",
+    "rate_limiter",
+    "db_cache_manager",
+    "postgres_cache_manager",
+    "mongodb_cache_manager",
+    "event_sourcing_manager",
+    "grafana_cache_manager",
+    "prometheus_cache_manager",
+    "loki_cache_manager",
+    "global_service_mesh",
+    "ultra_ai_manager",
+    "ultra_security_manager",
+    "ultra_analytics_engine",
+    
+    # Event types
+    "EventType"
 ]

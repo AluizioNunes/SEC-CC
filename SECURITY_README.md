@@ -82,9 +82,8 @@
 
 2. **Environment Setup**
    ```bash
-   # Copy environment files
+   # Copy environment file
    cp .env.example .env
-   cp production.env.example production.env
 
    # Generate security configuration
    ./setup-letsencrypt.sh your-domain.com your-email@example.com

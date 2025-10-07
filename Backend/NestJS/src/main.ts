@@ -4,6 +4,7 @@ import { Controller, Get, Module, Res } from '@nestjs/common';
 import { Response } from 'express';
 import * as client from 'prom-client';
 import { ServiceRegistrationService } from './service-registration/service-registration.service';
+import { ServiceRegistrationModule } from './service-registration/service-registration.module';
 
 // Create a single registry instance to avoid duplicate metrics
 const register = new client.Registry();
@@ -78,7 +79,11 @@ class AppController {
   }
 }
 
-@Module({ controllers: [AppController] })
+@Module({
+  imports: [ServiceRegistrationModule],
+  controllers: [AppController],
+  providers: [ServiceRegistrationService]
+})
 class AppModule {}
 
 async function bootstrap() {

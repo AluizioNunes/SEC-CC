@@ -50,7 +50,7 @@ pre_deployment_checks() {
     fi
 
     # Check if required files exist
-    required_files=("$DOCKER_COMPOSE_FILE" ".env" "production.env")
+    required_files=("$DOCKER_COMPOSE_FILE" ".env")
     for file in "${required_files[@]}"; do
         if [ ! -f "$file" ]; then
             error "Required file $file not found"
@@ -118,7 +118,7 @@ EOF
     fi
 
     # Set proper file permissions
-    chmod 600 .env .env.security production.env || warning "Failed to set file permissions"
+    chmod 600 .env .env.security || warning "Failed to set file permissions"
 
     # Check SSL certificates
     if [ "$ENVIRONMENT" = "production" ]; then

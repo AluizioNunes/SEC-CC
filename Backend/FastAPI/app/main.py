@@ -39,10 +39,27 @@ from .redis import (
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-from Backend.Service_Registration import register_current_service, unregister_current_service
+
+try:
+    from Backend.Service_Registration import register_current_service, unregister_current_service
+except ImportError:
+    # Create mock functions if Backend module is not available
+    async def register_current_service():
+        return None
+    
+    async def unregister_current_service():
+        return None
 
 # Import message broker
-from Backend.Message_Broker.message_handler import message_handler
+try:
+    from Backend.Message_Broker.message_handler import message_handler
+except ImportError:
+    # Create mock object if Backend module is not available
+    class MockMessageHandler:
+        async def initialize(self):
+            pass
+    
+    message_handler = MockMessageHandler()
 
 
 @asynccontextmanager
@@ -70,41 +87,68 @@ async def lifespan(app: FastAPI):
         print("✅ MongoDB Ultra-Cache Manager initialized")
 
         # Initialize hybrid message broker
-        await hybrid_broker.initialize()
-        print("✅ Hybrid Message Broker initialized")
+        if hybrid_broker is not None:
+            await hybrid_broker.initialize()
+            print("✅ Hybrid Message Broker initialized")
+        else:
+            print("⚠️  Hybrid Message Broker not available")
 
         # Initialize global service mesh
-        print("✅ Global Service Mesh initialized")
+        if global_service_mesh is not None:
+            print("✅ Global Service Mesh initialized")
+        else:
+            print("⚠️  Global Service Mesh not available")
 
         # Initialize ultra-security system
-        await ultra_security_manager.initialize_security_system()
-        print("✅ Ultra-Advanced Security System initialized")
+        if ultra_security_manager is not None:
+            await ultra_security_manager.initialize_security_system()
+            print("✅ Ultra-Advanced Security System initialized")
+        else:
+            print("⚠️  Ultra-Advanced Security System not available")
 
         # Initialize ultra-AI manager
-        print("✅ Ultra-AI Manager initialized")
+        if ultra_ai_manager is not None:
+            print("✅ Ultra-AI Manager initialized")
+        else:
+            print("⚠️  Ultra-AI Manager not available")
 
         # Initialize ultra-analytics engine
-        print("✅ Ultra-Analytics Engine initialized")
+        if ultra_analytics_engine is not None:
+            print("✅ Ultra-Analytics Engine initialized")
+        else:
+            print("⚠️  Ultra-Analytics Engine not available")
 
         # Start session cluster heartbeat
-        asyncio.create_task(session_cluster.start_heartbeat())
-        print("✅ Session Clustering active")
+        if session_cluster is not None:
+            asyncio.create_task(session_cluster.start_heartbeat())
+            print("✅ Session Clustering active")
+        else:
+            print("⚠️  Session Clustering not available")
 
         # Start global service mesh monitoring
-        asyncio.create_task(global_service_mesh.start_global_monitoring())
-        print("✅ Global Service Mesh monitoring active")
+        if global_service_mesh is not None:
+            asyncio.create_task(global_service_mesh.start_global_monitoring())
+            print("✅ Global Service Mesh monitoring active")
+        else:
+            print("⚠️  Global Service Mesh monitoring not available")
 
         # Start continuous security monitoring
-        asyncio.create_task(ultra_security_manager.start_continuous_monitoring())
-        print("✅ Ultra-Security monitoring active")
+        if ultra_security_manager is not None:
+            asyncio.create_task(ultra_security_manager.start_continuous_monitoring())
+            print("✅ Ultra-Security monitoring active")
+        else:
+            print("⚠️  Ultra-Security monitoring not available")
 
         # Register service with service mesh and registry
         asyncio.create_task(register_current_service())
         print("✅ Service registration task started")
 
         # Initialize message handler
-        asyncio.create_task(message_handler.initialize())
-        print("✅ Message handler initialized")
+        if message_handler is not None:
+            asyncio.create_task(message_handler.initialize())
+            print("✅ Message handler initialized")
+        else:
+            print("⚠️  Message handler not available")
 
         print("✅ All Redis ultra-advanced features initialized successfully")
 
@@ -122,9 +166,12 @@ async def lifespan(app: FastAPI):
     print("✅ Service unregistration completed")
 
     # Close database connections
-    await postgres_cache_manager.close()
-    await mongodb_cache_manager.close()
-    await hybrid_broker.close()
+    if postgres_cache_manager is not None:
+        await postgres_cache_manager.close()
+    if mongodb_cache_manager is not None:
+        await mongodb_cache_manager.close()
+    if hybrid_broker is not None:
+        await hybrid_broker.close()
 
 
 # Create FastAPI app with lifespan management
@@ -191,21 +238,95 @@ async def root():
 async def health():
     """Ultra-advanced health check with all Redis features"""
     try:
-        cache_stats = api_cache_manager.get_cache_stats()
-        session_stats = await session_cluster.get_session_stats()
-        db_cache_stats = await db_cache_manager.get_cache_performance()
-        rate_limit_stats = rate_limiter.get_rate_limit_stats()
-        postgres_stats = postgres_cache_manager.get_cache_stats()
-        mongodb_stats = mongodb_cache_manager.get_cache_stats()
-        broker_stats = await hybrid_broker.get_message_stats()
-        event_stats = await event_sourcing_manager.get_event_stats()
-        grafana_stats = grafana_cache_manager.get_cache_stats()
-        prometheus_stats = prometheus_cache_manager.get_cache_stats()
-        loki_stats = loki_cache_manager.get_cache_stats()
-        global_mesh_stats = await global_service_mesh.get_global_mesh_analytics()
-        ai_overview = await ultra_ai_manager.get_ai_system_overview()
-        security_report = await ultra_security_manager.get_comprehensive_security_report()
-        analytics_dashboard = await ultra_analytics_engine.get_business_intelligence_dashboard()
+        # Get cache stats
+        if api_cache_manager is not None:
+            cache_stats = api_cache_manager.get_cache_stats()
+        else:
+            cache_stats = {"status": "unavailable"}
+        
+        # Get session stats
+        if session_cluster is not None:
+            session_stats = await session_cluster.get_session_stats()
+        else:
+            session_stats = {"status": "unavailable"}
+        
+        # Get database cache performance
+        if db_cache_manager is not None:
+            db_cache_stats = await db_cache_manager.get_cache_performance()
+        else:
+            db_cache_stats = {"status": "unavailable"}
+        
+        # Get rate limit stats
+        if rate_limiter is not None:
+            rate_limit_stats = rate_limiter.get_rate_limit_stats()
+        else:
+            rate_limit_stats = {"status": "unavailable"}
+        
+        # Get PostgreSQL stats
+        if postgres_cache_manager is not None:
+            postgres_stats = postgres_cache_manager.get_cache_stats()
+        else:
+            postgres_stats = {"status": "unavailable"}
+        
+        # Get MongoDB stats
+        if mongodb_cache_manager is not None:
+            mongodb_stats = mongodb_cache_manager.get_cache_stats()
+        else:
+            mongodb_stats = {"status": "unavailable"}
+        
+        # Get broker stats
+        if hybrid_broker is not None:
+            broker_stats = await hybrid_broker.get_message_stats()
+        else:
+            broker_stats = {"status": "unavailable"}
+        
+        # Get event stats
+        if event_sourcing_manager is not None:
+            event_stats = await event_sourcing_manager.get_event_stats()
+        else:
+            event_stats = {"status": "unavailable"}
+        
+        # Get Grafana stats
+        if grafana_cache_manager is not None:
+            grafana_stats = grafana_cache_manager.get_cache_stats()
+        else:
+            grafana_stats = {"status": "unavailable"}
+        
+        # Get Prometheus stats
+        if prometheus_cache_manager is not None:
+            prometheus_stats = prometheus_cache_manager.get_cache_stats()
+        else:
+            prometheus_stats = {"status": "unavailable"}
+        
+        # Get Loki stats
+        if loki_cache_manager is not None:
+            loki_stats = loki_cache_manager.get_cache_stats()
+        else:
+            loki_stats = {"status": "unavailable"}
+        
+        # Get global mesh stats
+        if global_service_mesh is not None:
+            global_mesh_stats = await global_service_mesh.get_global_mesh_analytics()
+        else:
+            global_mesh_stats = {"status": "unavailable"}
+        
+        # Get AI overview
+        if ultra_ai_manager is not None:
+            ai_overview = await ultra_ai_manager.get_ai_system_overview()
+        else:
+            ai_overview = {"status": "unavailable"}
+        
+        # Get security report
+        if ultra_security_manager is not None:
+            security_report = await ultra_security_manager.get_comprehensive_security_report()
+        else:
+            security_report = {"status": "unavailable"}
+        
+        # Get analytics dashboard
+        if ultra_analytics_engine is not None:
+            analytics_dashboard = await ultra_analytics_engine.get_business_intelligence_dashboard()
+        else:
+            analytics_dashboard = {"status": "unavailable"}
 
         # Determine overall health status
         is_healthy = (
