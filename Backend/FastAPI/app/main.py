@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
     print("🚀 Starting FastAPI with Ultra-Advanced Redis Integration...")
 
     # Test Redis connection
-    redis_connected = await test_redis_connection()
+    redis_connected = test_redis_connection()
     if not redis_connected:
         print("❌ Redis connection failed!")
         raise Exception("Redis connection failed")
@@ -174,13 +174,13 @@ async def health():
         session_stats = await session_cluster.get_session_stats()
         db_cache_stats = await db_cache_manager.get_cache_performance()
         rate_limit_stats = rate_limiter.get_rate_limit_stats()
-        postgres_stats = await postgres_cache_manager.get_cache_stats()
-        mongodb_stats = await mongodb_cache_manager.get_cache_stats()
+        postgres_stats = postgres_cache_manager.get_cache_stats()
+        mongodb_stats = mongodb_cache_manager.get_cache_stats()
         broker_stats = await hybrid_broker.get_message_stats()
         event_stats = await event_sourcing_manager.get_event_stats()
-        grafana_stats = await grafana_cache_manager.get_cache_stats()
-        prometheus_stats = await prometheus_cache_manager.get_cache_stats()
-        loki_stats = await loki_cache_manager.get_cache_stats()
+        grafana_stats = grafana_cache_manager.get_cache_stats()
+        prometheus_stats = prometheus_cache_manager.get_cache_stats()
+        loki_stats = loki_cache_manager.get_cache_stats()
         global_mesh_stats = await global_service_mesh.get_global_mesh_analytics()
         ai_overview = await ultra_ai_manager.get_ai_system_overview()
         security_report = await ultra_security_manager.get_comprehensive_security_report()
