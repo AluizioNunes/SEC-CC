@@ -11,7 +11,7 @@ COPY package-nestjs.json package.json
 COPY Backend/NestJS/package-lock.json* ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci --prefer-offline --no-audit --no-fund --legacy-peer-deps
 
 # Copy source
 COPY tsconfig-nestjs.json tsconfig.json
@@ -20,7 +20,7 @@ COPY Backend/NestJS/src ./src
 COPY Backend/NestJS/test ./test
 
 # Build application
-RUN npm run build
+RUN npm run build --verbose
 
 # Runtime image
 FROM node:20-alpine AS runtime

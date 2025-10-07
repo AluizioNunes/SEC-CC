@@ -10,7 +10,7 @@ RUN apk add --no-cache python3 make g++ git
 COPY package.json package-lock.json* ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci --prefer-offline --no-audit --no-fund --legacy-peer-deps
 
 # Copy source
 COPY tsconfig.json tsconfig.build.json ./
@@ -18,7 +18,7 @@ COPY src ./src
 COPY test ./test
 
 # Build application
-RUN npm run build
+RUN npm run build --verbose
 
 # Runtime image
 FROM node:20-alpine AS runtime

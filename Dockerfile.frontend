@@ -7,10 +7,10 @@ WORKDIR /app
 COPY package.json.frontend package-lock.json* ./
 
 # Install production and dev deps for build (using npm install to avoid cache issues)
-RUN npm install
+RUN npm ci --prefer-offline --no-audit --no-fund --legacy-peer-deps
 
 # Copy source
 COPY . .
 
 # Build on container start so dist is written to the mounted volume
-CMD ["sh", "-c", "npm run build && tail -f /dev/null"]
+CMD ["sh", "-c", "npm run build --verbose && tail -f /dev/null"]
