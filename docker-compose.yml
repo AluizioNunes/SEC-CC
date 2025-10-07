@@ -30,7 +30,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.frontend
+      dockerfile: Services/Frontend/Dockerfile
     container_name: CC-FRONTEND
     ports:
       - "5174:80"
@@ -47,7 +47,7 @@ services:
   fastapi:
     build:
       context: .
-      dockerfile: Dockerfile.fastapi
+      dockerfile: Services/FastAPI/Dockerfile
     container_name: CC-FASTAPI
     ports:
       - "8000:8000"
@@ -72,7 +72,7 @@ services:
   nestjs:
     build:
       context: .
-      dockerfile: Dockerfile.nestjs
+      dockerfile: Services/NestJS/Dockerfile
     container_name: CC-NESTJS
     environment:
       PORT: ${NESTJS_PORT:-3000}
@@ -209,7 +209,7 @@ services:
       HOST: rabbitmq
       # Add time synchronization and performance optimizations
       TZ: UTC
-      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbitmq_management path_prefix /rabbitmq"
+      # RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS removido devido a incompatibilidade
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
       - D:/PROJETOS/SEC/Services/Docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
