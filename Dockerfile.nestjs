@@ -8,10 +8,10 @@ RUN apk add --no-cache python3 make g++ git
 
 # Copy package files
 COPY package-nestjs.json package.json
-COPY Backend/NestJS/package-lock.json* ./
+COPY Backend/NestJS/package-lock.json ./
 
 # Install dependencies
-RUN npm ci --prefer-offline --no-audit --no-fund --legacy-peer-deps
+RUN npm ci --prefer-offline --no-audit --no-fund --legacy-peer-deps || npm install --prefer-offline --no-audit --no-fund --legacy-peer-deps
 
 # Copy source
 COPY tsconfig-nestjs.json tsconfig.json
