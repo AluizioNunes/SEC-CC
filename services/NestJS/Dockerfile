@@ -7,17 +7,15 @@ WORKDIR /usr/src/app
 RUN apk add --no-cache python3 make g++ git
 
 # Copy package files
-COPY ../../package-nestjs.json package.json
-COPY ../../Backend/NestJS/package-lock.json ./
+COPY package.json package-lock.json* ./
 
 # Install dependencies
 RUN npm ci --prefer-offline --no-audit --no-fund --legacy-peer-deps || npm install --prefer-offline --no-audit --no-fund --legacy-peer-deps
 
 # Copy source
-COPY ../../tsconfig-nestjs.json tsconfig.json
-COPY ../../tsconfig.build-nestjs.json tsconfig.build.json
-COPY ../../Backend/NestJS/src ./src
-COPY ../../Backend/NestJS/test ./test
+COPY tsconfig.json tsconfig.build.json ./
+COPY src ./src
+COPY test ./test
 
 # Build application
 RUN npm run build --verbose

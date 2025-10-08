@@ -29,11 +29,11 @@ services:
   # Frontend React
   frontend:
     build:
-      context: ./Services/Frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Services/Docker/frontend/Dockerfile
     container_name: CC-FRONTEND
     ports:
-      - "5174:80"
+      - "5175:80"
     networks:
       - sec_net
     restart: unless-stopped
@@ -46,7 +46,7 @@ services:
 
   fastapi:
     build:
-      context: ./Services/FastAPI
+      context: ./Backend/FastAPI
       dockerfile: Dockerfile
     container_name: CC-FASTAPI
     ports:
@@ -71,7 +71,7 @@ services:
 
   nestjs:
     build:
-      context: ./Services/NestJS
+      context: ./Backend/NestJS
       dockerfile: Dockerfile
     container_name: CC-NESTJS
     environment:
