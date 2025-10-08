@@ -6,8 +6,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Services/Docker/nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./Services/Docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./Docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./Docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
       - sec_net
     depends_on:
@@ -30,7 +30,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Services/Docker/frontend/Dockerfile
+      dockerfile: ./Docker/frontend/Dockerfile
     container_name: CC-FRONTEND
     ports:
       - "5175:80"
@@ -126,7 +126,7 @@ services:
       resources:
         limits:
           memory: 1G
-          cpus: '0.5'
+          cpus: '1'
 
   mongodb:
     image: mongo:latest
@@ -155,7 +155,7 @@ services:
       resources:
         limits:
           memory: 1G
-          cpus: '0.5'
+          cpus: '1'
 
   redis:
     image: redis:latest
@@ -176,6 +176,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
 
   redis-exporter:
     image: oliver006/redis_exporter:latest
@@ -212,8 +217,8 @@ services:
       # RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS removido devido a incompatibilidade
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      - ./Services/Docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-      - ./Services/Docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./Docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./Docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
     ports:
       - "5672:5672"   # AMQP
       - "15672:15672" # Management UI
@@ -248,8 +253,8 @@ services:
       TZ: UTC
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./Services/Docker/grafana/provisioning:/etc/grafana/provisioning
-      - ./Services/Docker/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./Docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./Docker/grafana/dashboards:/var/lib/grafana/dashboards
     networks:
       - sec_net
     # Add health checks
