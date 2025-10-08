@@ -7,7 +7,7 @@ services:
       - "443:443"
     volumes:
       - ./Docker/nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./Docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./Services/Docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
       - sec_net
     depends_on:
@@ -30,7 +30,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: ./Docker/frontend/Dockerfile
+      dockerfile: ./Services/Frontend/Dockerfile
     container_name: CC-FRONTEND
     ports:
       - "5175:80"
