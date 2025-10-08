@@ -1,5 +1,5 @@
-node_modules
-dist
+.node_modules
+!/dist
 frontend_dist
 .git
 .venv
@@ -10,9 +10,6 @@ npm-debug.log
 Docker/frontend
 Services/Docker/frontend
 Services/Frontend/node_modules
-**/node_modules
-**/dist
-**/frontend_dist
 # Dependencies
 node_modules
 npm-debug.log*

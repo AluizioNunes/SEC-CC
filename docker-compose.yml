@@ -28,9 +28,7 @@ services:
 
   # Frontend React
   frontend:
-    build:
-      context: .
-      dockerfile: ./Services/Frontend/Dockerfile
+    image: sec-frontend:latest
     container_name: CC-FRONTEND
     ports:
       - "5175:80"
