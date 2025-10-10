@@ -32,7 +32,24 @@ services:
       timeout: 10s
       retries: 3
 
+  # ========== REDIS CACHE ==========
+  redis:
+    image: redis:latest
+    container_name: CC-REDIS
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass redispassword2024
+    environment:
+      - REDIS_PASSWORD=redispassword2024
+    networks:
+      - sec_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 networks:
-  default:
-    name: sec_net
+  sec_net:
     driver: bridge
