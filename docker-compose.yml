@@ -48,7 +48,32 @@ services:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 30s
       timeout: 10s
+  # ========== FASTAPI BACKEND ==========
+  fastapi:
+    build:
+      context: ./Backend/FastAPI
+      dockerfile: Dockerfile
+    container_name: CC-FASTAPI
+    ports:
+      - "8000:8000"
+    networks:
+      - sec_net
+    depends_on:
+      - redis
+    # Add time synchronization and health checks
+    environment:
+      - SERVICE_NAME=fastapi
+      - HOST=fastapi
+      - PORT=8000
+      - POSTGRES_URL=postgresql://sec:secpass2024@postgres:5432/secdb
+      - REDIS_URL=redis://:redispassword2024@redis:6379/0
+      - JWT_SECRET_KEY=super-secret-jwt-key-change-in-production-2024
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 10s
       retries: 3
+      start_period: 60s
 
 networks:
   sec_net:
