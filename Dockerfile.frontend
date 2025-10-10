@@ -3,9 +3,9 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files and install dependencies
-# This leverages Docker's layer caching by copying package files first.
+# This LEVERAGES Docker's layer caching by copying package files first.
 COPY package.json package-lock.json* ./
-RUN npm ci --legacy-peer-deps
+RUN npm install --legacy-peer-deps --no-audit --no-fund
 
 # Copy the rest of the application source code
 # Assumes a .dockerignore file is present to exclude unnecessary files.
