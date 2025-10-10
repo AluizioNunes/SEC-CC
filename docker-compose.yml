@@ -15,19 +15,19 @@ services:
     depends_on:
       - frontend
 
-  # ========== FRONTEND REACT ==========
+  # ========== FRONTEND REACT (APLICAÇÃO REAL) ==========
   frontend:
     build:
       context: ./
       dockerfile: Dockerfile.frontend
     container_name: CC-FRONTEND
     ports:
-      - "3000:80"
+      - "5173:5173"  # ← Porta padrão do Vite
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5173"]
       interval: 30s
       timeout: 10s
       retries: 3
