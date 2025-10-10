@@ -75,31 +75,31 @@ services:
       retries: 3
       start_period: 60s
 
-  # ========== NESTJS BACKEND ==========
-  nestjs:
-    build:
-      context: ./Backend/NestJS
-      dockerfile: Dockerfile
-    container_name: CC-NESTJS
-    environment:
-      PORT: 3000
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: redispassword2024
-      SERVICE_NAME: nestjs
-      HOST: nestjs
-    ports:
-      - "3000:3000"
-    networks:
-      - sec_net
-    depends_on:
-      - redis
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health/live"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+  # ========== NESTJS BACKEND (TEMPORARIAMENTE DESABILITADO) ==========
+  # nestjs:
+  #   build:
+  #     context: ./Backend/NestJS
+  #     dockerfile: Dockerfile
+  #   container_name: CC-NESTJS
+  #   environment:
+  #     PORT: 3000
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     REDIS_PASSWORD: redispassword2024
+  #     SERVICE_NAME: nestjs
+  #     HOST: nestjs
+  #   ports:
+  #     - "3000:3000"
+  #   networks:
+  #     - sec_net
+  #   depends_on:
+  #     - redis
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:3000/health/live"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 60s
 
 networks:
   sec_net:
