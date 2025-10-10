@@ -201,9 +201,8 @@ services:
       PROMETHEUS_CONFIG_FILE: /etc/prometheus/prometheus.yml
       SERVICE_NAME: prometheus
       HOST: prometheus
+    # Simplified volumes - avoid conflicts
     volumes:
-      - ./Docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./Docker/prometheus/rules/sec-alerts.yml:/etc/prometheus/rules/sec-alerts.yml
       - prometheus_data:/prometheus
     ports:
       - "9090:9090"
