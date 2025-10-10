@@ -9,20 +9,17 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost"]
-      interval: 30s
       timeout: 10s
       retries: 3
     depends_on:
       - frontend
 
-  # ========== FRONTEND REACT (APLICAÇÃO REAL) ==========
+  # ========== FRONTEND REACT ==========
   frontend:
-    build:
-      context: ./
-      dockerfile: Dockerfile.frontend
+    image: cc-frontend:latest
     container_name: CC-FRONTEND
     ports:
-      - "5173:5173"  # ← Porta padrão do Vite
+      - "5173:5173"
     environment:
       - NODE_ENV=development
     restart: unless-stopped
@@ -50,9 +47,7 @@ services:
       timeout: 10s
   # ========== FASTAPI BACKEND ==========
   fastapi:
-    build:
-      context: ./Backend/FastAPI
-      dockerfile: Dockerfile
+    image: cc-fastapi:latest
     container_name: CC-FASTAPI
     ports:
       - "8000:8000"
@@ -77,13 +72,8 @@ services:
 
   # ========== NESTJS BACKEND ==========
   nestjs:
-    image: node:20-alpine
+    image: cc-nestjs:latest
     container_name: CC-NESTJS
-    working_dir: /app
-    volumes:
-      - ./Backend/NestJS:/app
-      - /app/node_modules  # evita conflito com node_modules local
-    command: sh -c "npm install --legacy-peer-deps --no-audit --no-fund && npm run start:dev"
     environment:
       PORT: 3000
       REDIS_HOST: redis
@@ -91,7 +81,7 @@ services:
       REDIS_PASSWORD: redispassword2024
       SERVICE_NAME: nestjs
       HOST: nestjs
-      NODE_ENV: development
+      NODE_ENV: production
     ports:
       - "3000:3000"
     networks:
@@ -99,7 +89,7 @@ services:
     depends_on:
       - redis
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health/live"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health/live"]
       interval: 30s
       timeout: 10s
       retries: 3
