@@ -1,41 +1,24 @@
-# NestJS Complete Project Dockerfile
+# Simplified NestJS Dockerfile for Docker deployment
 
-# Build stage
-FROM node:20-alpine AS base
+FROM node:20-alpine
+
 WORKDIR /usr/src/app
 
 # Copy package files
 COPY package.json package-lock.json* ./
 
-# Install dependencies - Simplified approach
-RUN npm install --legacy-peer-deps --no-audit --no-fund
+# Install only production dependencies - simplified
+RUN npm install --production --legacy-peer-deps --no-audit --no-fund
 
-# Copy source
-COPY tsconfig.json tsconfig.build.json ./
+# Copy source code
 COPY src ./src
-COPY test ./test
+COPY tsconfig.json tsconfig.build.json ./
 
-# Build application
-RUN npm run build --verbose
-
-# Runtime stage
-FROM node:20-alpine AS runtime
-WORKDIR /usr/src/app
-ENV NODE_ENV=production
-
-# Create a non-root user and group
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-
-# Copy necessary files from the build stage
-COPY --from=base /usr/src/app/node_modules ./node_modules
-COPY --from=base /usr/src/app/dist ./dist
-COPY --from=base /usr/src/app/package.json ./
-
-# Set correct ownership
-RUN chown -R appuser:appgroup /usr/src/app
-
-# Switch to the non-root user
-USER appuser
+# Build the application
+RUN npm install -g @nestjs/cli typescript
+RUN npx tsc
 
 EXPOSE 3000
+
+# Start the application
 CMD ["node", "dist/main.js"]
