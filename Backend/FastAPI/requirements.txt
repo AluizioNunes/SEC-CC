@@ -20,9 +20,12 @@ structlog==23.2.0
 databases==0.8.0
 alembic==1.12.0
 
-# Monitoring & Tracing - Simplified versions
+# Monitoring & Tracing - Complete OpenTelemetry stack
 opentelemetry-api==1.21.0
 opentelemetry-sdk==1.21.0
+opentelemetry-exporter-jaeger==1.21.0
+opentelemetry-instrumentation==0.42b0
+opentelemetry-instrumentation-fastapi==0.42b0
 
 # Validation & Serialization
 pydantic==2.5.0
