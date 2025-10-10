@@ -3,7 +3,7 @@ version: '3.8'
 services:
   nginx:
     image: nginx:1.25-alpine
-    container_name: CC-NGINX-DEBUG
+    container_name: CC-NGINX
     ports:
       - "80:80"
     restart: unless-stopped
