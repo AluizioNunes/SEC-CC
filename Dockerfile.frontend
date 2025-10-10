@@ -3,13 +3,19 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files
-COPY package.json.frontend ./package.json
+COPY package.json ./package.json
 
 # Install dependencies for build
 RUN npm install --legacy-peer-deps --silent
 
 # Copy source code
-COPY . .
+COPY src ./src
+COPY public ./public
+COPY index.html ./index.html
+COPY vite.config.ts ./vite.config.ts
+COPY tsconfig.json ./tsconfig.json
+COPY tsconfig.app.json ./tsconfig.app.json
+COPY tsconfig.node.json ./tsconfig.node.json
 
 # Build the application
 RUN npm run build
