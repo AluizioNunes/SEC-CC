@@ -2,6 +2,7 @@
 FastAPI Application with Ultra-Advanced Redis Integration
 Revolutionary application with complete Redis ecosystem for enterprise-grade applications
 """
+from typing import Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, Request, Depends, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
