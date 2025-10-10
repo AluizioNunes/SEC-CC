@@ -29,7 +29,7 @@ services:
   # Frontend React
   frontend:
     build:
-      context: .
+      context: ./
       dockerfile: Services/Frontend/Dockerfile
     container_name: CC-FRONTEND
     ports:

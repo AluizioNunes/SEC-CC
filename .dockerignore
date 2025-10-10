@@ -82,3 +82,29 @@ external-integrations
 
 # Logs
 *.log
+
+# Backend directories that might cause issues
+Backend/**
+!Backend/FastAPI/**
+!Backend/NestJS/**
+Backend/FastAPI/node_modules
+Backend/NestJS/node_modules
+Backend/**/node_modules
+
+# Services directory exclusions
+Services/**
+!Services/Frontend/**
+Services/Frontend/node_modules
+Services/**/node_modules
+
+# Exclude hidden files and directories that might cause issues
+**/.*
+*/.*
+**/.*/**
+
+# Exclude any temporary or cache files
+**/*.tmp
+**/*.temp
+**/*.cache
+**/cache
+**/tmp
