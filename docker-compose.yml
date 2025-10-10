@@ -7,9 +7,9 @@ services:
       - "443:443"
     volumes:
       - ./Docker/nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./Services/Docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./Docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     environment:
-      - TZ=UTC
+      - HOST=nginx
     networks:
       - sec_net
     depends_on:
@@ -34,8 +34,7 @@ services:
       context: ./
       dockerfile: Dockerfile.frontend
     container_name: CC-FRONTEND
-    ports:
-      - "5175:80"
+
     networks:
       - sec_net
     restart: unless-stopped
@@ -60,7 +59,6 @@ services:
       - redis-exporter
     # Add time synchronization and health checks
     environment:
-      - TZ=UTC
       - SERVICE_NAME=fastapi
       - HOST=fastapi
       - PORT=8000
@@ -82,8 +80,6 @@ services:
       REDIS_PORT: ${REDIS_PORT:-6379}
       SERVICE_NAME: nestjs
       HOST: nestjs
-      # Add time synchronization
-      TZ: UTC
     ports:
       - "3000:3000"
     networks:
@@ -103,13 +99,12 @@ services:
     image: postgres:17.6-alpine
     container_name: CC-POSTGRESQL
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-sec}
       SERVICE_NAME: postgresql
       HOST: postgres
       # Add time synchronization and performance optimizations
-      TZ: UTC
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
@@ -137,8 +132,7 @@ services:
       MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
       SERVICE_NAME: mongodb
       HOST: mongodb
-      # Add time synchronization and performance optimizations
-      TZ: UTC
+      # Add performance optimizations
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
     volumes:
@@ -149,7 +143,7 @@ services:
       - sec_net
     # Add health checks and resource limits
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      test: mongosh --eval 'db.runCommand("ping").ok' localhost:27017/${MONGO_INITDB_DATABASE} --quiet
       interval: 30s
       timeout: 10s
       retries: 3
@@ -171,8 +165,6 @@ services:
     environment:
       SERVICE_NAME: redis
       HOST: redis
-      # Add time synchronization
-      TZ: UTC
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -190,17 +182,15 @@ services:
     ports:
       - "9121:9121"
     environment:
-      REDIS_ADDR: redis://redis:6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      # Add time synchronization
-      TZ: UTC
+        REDIS_ADDR: redis://redis:6379
+        REDIS_PASSWORD: ${REDIS_PASSWORD:-redispassword}
     networks:
       - sec_net
     depends_on:
       - redis
     # Add health checks
     healthcheck:
-      test: ["CMD", "wget", "--spider", "http://localhost:9121/metrics"]
+      test: ["CMD", "curl", "--fail", "http://localhost:9121/metrics"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -209,18 +199,15 @@ services:
     image: rabbitmq:3-management-alpine
     container_name: CC-RABBITMQ
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
-      SERVICE_NAME: rabbitmq
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST:-/}
       HOST: rabbitmq
-      # Add time synchronization and performance optimizations
-      TZ: UTC
       # RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS removido devido a incompatibilidade
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      - ./Services/Docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-      - ./Services/Docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./Docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./Docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
     ports:
       - "5672:5672"   # AMQP
       - "15672:15672" # Management UI
@@ -244,19 +231,17 @@ services:
     ports:
       - "3001:3000"
     environment:
-      # Add authentication and time synchronization
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-admin}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_USERS_AUTO_ASSIGN_ORG: "true"
       GF_USERS_AUTO_ASSIGN_ORG_ROLE: "Admin"
       SERVICE_NAME: grafana
       HOST: grafana
-      TZ: UTC
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./Services/Docker/grafana/provisioning:/etc/grafana/provisioning
-      - ./Services/Docker/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./Docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./Docker/grafana/dashboards:/var/lib/grafana/dashboards
     networks:
       - sec_net
     # Add health checks
@@ -273,13 +258,9 @@ services:
       - PROMETHEUS_CONFIG_FILE=/etc/prometheus/prometheus.yml
       - SERVICE_NAME=prometheus
       - HOST=prometheus
-      # Add time synchronization and relax time constraints
-      - TZ=UTC
-    configs:
-      - source: prometheus_config
-        target: /etc/prometheus/prometheus.yml
-      - source: prometheus_rules
-        target: /etc/prometheus/rules/sec-alerts.yml
+    volumes:
+      - ./Docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./Docker/prometheus/prometheus_rules.yml:/etc/prometheus/rules/sec-alerts.yml
     ports:
       - "9090:9090"
     networks:
@@ -289,7 +270,7 @@ services:
       - ntp
     # Add health checks and resource limits
     healthcheck:
-      test: ["CMD", "wget", "--spider", "http://localhost:9090/-/healthy"]
+      test: ["CMD", "curl", "--fail", "http://localhost:9090/-/healthy"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -302,35 +283,22 @@ services:
   loki:
     image: grafana/loki:2.9.8
     container_name: CC-LOKI
-    environment:
-      - LOKI_CONFIG_FILE=/etc/loki/config.yml
-      # Add time synchronization
-      - TZ=UTC
-    configs:
-      - source: loki_config
-        target: /etc/loki/config.yml
+    volumes:
+      - ./Docker/loki/config.yml:/etc/loki/config.yml
     ports:
       - "3100:3100"
     networks:
       - sec_net
-    # Add time synchronization service dependency
-    depends_on:
-      - ntp
 
   promtail:
     image: grafana/promtail:2.9.8
     container_name: CC-PROMTAIL
-    volumes:
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /var/log:/var/log:ro  # Logs do sistema host
     environment:
-      - PROMTAIL_CONFIG_FILE=/etc/promtail/config.yml
-      # Add time synchronization
-      - TZ=UTC
-    configs:
-      - source: promtail_config
-        target: /etc/promtail/config.yml
+      - SERVICE_NAME: promtail
+      - HOST: promtail
+    volumes:
+      - ./Docker/promtail/config.yml:/etc/promtail/config.yml
+      - //var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       - "9080:9080"
     networks:
@@ -899,7 +867,7 @@ networks:
     driver: bridge
 
 volumes:
-  frontend_dist:
+
   postgres_data:
   mongo_data:
   grafana_data:
@@ -916,367 +884,3 @@ volumes:
   ml_models:
   ml_datasets:
   digital_assets:
-
-configs:
-  promtail_config:
-    content: |
-      server:
-        http_listen_port: 9080
-        grpc_listen_port: 0
-        # Add time synchronization adjustments
-        graceful_shutdown_timeout: 30s
-
-      positions:
-        filename: /tmp/positions.yaml
-
-      clients:
-        - url: http://loki:3100/loki/api/v1/push
-          batchwait: 5s
-          batchsize: 102400
-          # Add timeout and retry configurations
-          timeout: 10s
-          backoff_config:
-            min_period: 100ms
-            max_period: 5s
-            max_retries: 20
-          # Handle time synchronization issues
-          external_labels:
-            job: promtail
-          # Allow for time drift
-          tenant_id: fake
-
-      scrape_configs:
-        # Logs de containers Docker (todos os serviços)
-        - job_name: container-logs
-          docker_sd_configs:
-            - host: unix:///var/run/docker.sock
-              refresh_interval: 5s
-          relabel_configs:
-            - source_labels: ['__meta_docker_container_name']
-              regex: '/(.*)'
-              target_label: 'container'
-            - source_labels: ['__meta_docker_container_log_stream']
-              target_label: 'logstream'
-            - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
-              target_label: 'service'
-            - replacement: '$${1}'
-              source_labels: ['__meta_docker_container_name']
-              regex: '/(.*)'
-              target_label: 'container_name'
-          pipeline_stages:
-            - json:
-                expressions:
-                  output: log
-                  stream: stream
-                  timestamp: time
-            - timestamp:
-                source: timestamp
-                format: RFC3339Nano
-                # Allow for time synchronization issues - increased tolerance
-                max_forward_offset: 48h
-                max_backward_offset: 48h
-                fallback_formats: 
-                  - "2006-01-02T15:04:05.000Z"
-                  - "2006-01-02T15:04:05Z"
-                  - "2006-01-02T15:04:05.000000Z"
-            - output:
-                source: output
-
-        # Logs do sistema host
-        - job_name: system-logs
-          static_configs:
-            - targets:
-                - localhost
-              labels:
-                job: system
-                __path__: /var/log/*log
-          pipeline_stages:
-            - multiline:
-                firstline: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
-                max_wait_time: 10s
-            - timestamp:
-                source: timestamp
-                format: RFC3339Nano
-                # Allow for time synchronization issues
-                max_forward_offset: 48h
-                max_backward_offset: 48h
-
-        # Logs de aplicações específicas (se existirem arquivos)
-        - job_name: application-logs
-          static_configs:
-            - targets:
-                - localhost
-              labels:
-                job: application
-                __path__: /var/log/app/*.log
-          pipeline_stages:
-            - multiline:
-                firstline: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
-                max_wait_time: 10s
-            - timestamp:
-                source: timestamp
-                format: RFC3339Nano
-                # Allow for time synchronization issues
-                max_forward_offset: 48h
-                max_backward_offset: 48h
-
-  prometheus_config:
-    content: |
-      global:
-        scrape_interval: 15s
-        evaluation_interval: 15s
-        # Adjust for time synchronization issues
-        scrape_timeout: 10s
-        external_labels:
-          monitor: 'sec-monitor'
-      
-      # Add rules files
-      rule_files:
-        - "rules/*.yml"
-      
-      # Global scrape configuration with relaxed time constraints
-      scrape_config_files:
-        - "scrape_configs/*.yml"
-      
-      scrape_configs:
-        - job_name: 'prometheus'
-          static_configs:
-            - targets: ['localhost:9090']
-          # Relax time constraints
-          scrape_timeout: 10s
-          honor_timestamps: false
-      
-        - job_name: 'loki'
-          static_configs:
-            - targets: ['loki:3100']
-          metrics_path: '/metrics'
-          # Relax time constraints
-          scrape_timeout: 10s
-          honor_timestamps: false
-      
-        - job_name: 'grafana'
-          static_configs:
-            - targets: ['grafana:3000']
-          # Relax time constraints
-          scrape_timeout: 10s
-          honor_timestamps: false
-      
-        - job_name: 'fastapi'
-          static_configs:
-            - targets: ['fastapi:8000']
-          metrics_path: '/metrics'
-          # Relax time constraints
-          scrape_timeout: 10s
-          honor_timestamps: false
-      
-        - job_name: 'nestjs'
-          static_configs:
-            - targets: ['nestjs:3000']
-          metrics_path: '/metrics'
-          # Relax time constraints
-          scrape_timeout: 10s
-          honor_timestamps: false
-          
-        - job_name: 'redis'
-          static_configs:
-            - targets: ['redis-exporter:9121']
-          # Relax time constraints
-          scrape_timeout: 10s
-          honor_timestamps: false
-            
-        - job_name: 'postgresql'
-          static_configs:
-            - targets: ['postgres-exporter:9187']
-          # Relax time constraints
-          scrape_timeout: 10s
-          honor_timestamps: false
-            
-        - job_name: 'mongodb'
-          static_configs:
-            - targets: ['mongodb-exporter:9216']
-          # Relax time constraints
-          scrape_timeout: 10s
-          honor_timestamps: false
-            
-        - job_name: 'rabbitmq'
-          static_configs:
-            - targets: ['rabbitmq-exporter:9419']
-          # Relax time constraints
-          scrape_timeout: 10s
-          honor_timestamps: false
-
-  prometheus_rules:
-    content: |
-      groups:
-      - name: sec-alerts
-        rules:
-        # High CPU usage alerts
-        - alert: HighCPUUsage
-          expr: rate(process_cpu_seconds_total[5m]) > 0.8
-          for: 5m
-          labels:
-            severity: warning
-          annotations:
-            summary: "High CPU usage detected"
-            description: "CPU usage is above 80% for more than 5 minutes"
-
-        # High memory usage alerts
-        - alert: HighMemoryUsage
-          expr: (process_resident_memory_bytes / process_virtual_memory_bytes) > 0.8
-          for: 5m
-          labels:
-            severity: warning
-          annotations:
-            summary: "High memory usage detected"
-            description: "Memory usage is above 80% for more than 5 minutes"
-
-        # Service down alerts
-        - alert: ServiceDown
-          expr: up == 0
-          for: 2m
-          labels:
-            severity: critical
-          annotations:
-            summary: "Service is down"
-            description: "Service {{ $labels.job }} is down"
-
-        # High error rate alerts
-        - alert: HighErrorRate
-          expr: rate(http_requests_total{code=~"5.."}[5m]) > 0.05
-          for: 5m
-          labels:
-            severity: warning
-          annotations:
-            summary: "High error rate detected"
-            description: "Error rate is above 5% for more than 5 minutes"
-
-        # Slow response time alerts
-        - alert: SlowResponseTime
-          expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
-          for: 5m
-          labels:
-            severity: warning
-          annotations:
-            summary: "Slow response time detected"
-            description: "95th percentile response time is above 2 seconds"
-
-        # Database connection alerts
-        - alert: HighDatabaseConnections
-          expr: pg_stat_database_numbackends > 50
-          for: 5m
-          labels:
-            severity: warning
-          annotations:
-            summary: "High database connections"
-            description: "Database connections are above 50 for more than 5 minutes"
-
-        # Redis memory alerts
-        - alert: HighRedisMemoryUsage
-          expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.8
-          for: 5m
-          labels:
-            severity: warning
-          annotations:
-            summary: "High Redis memory usage"
-            description: "Redis memory usage is above 80% for more than 5 minutes"
-
-        # RabbitMQ queue alerts
-        - alert: HighRabbitMQQueueSize
-          expr: rabbitmq_queue_messages > 10000
-          for: 5m
-          labels:
-            severity: warning
-          annotations:
-            summary: "High RabbitMQ queue size"
-            description: "RabbitMQ queue size is above 10000 messages for more than 5 minutes"
-
-  loki_config:
-    content: |
-      auth_enabled: false
-
-      server:
-        http_listen_port: 3100
-        grpc_listen_port: 9096
-        # Add time synchronization
-        graceful_shutdown_timeout: 30s
-
-      common:
-        instance_addr: 127.0.0.1
-        path_prefix: /tmp/loki
-        storage:
-          filesystem:
-            chunks_directory: /tmp/loki/chunks
-            rules_directory: /tmp/loki/rules
-        replication_factor: 1
-        ring:
-          kvstore:
-            store: inmemory
-
-      # Single instance configuration - Fix replication issues
-      ingester:
-        lifecycler:
-          address: 127.0.0.1
-          ring:
-            kvstore:
-              store: inmemory
-            replication_factor: 1
-          final_sleep: 0s
-        chunk_idle_period: 5m
-        chunk_retain_period: 30s
-        max_transfer_retries: 0
-        wal:
-          dir: /tmp/loki/wal
-          enabled: true
-        # Ensure ingester is healthy
-        max_chunk_age: 2h
-
-      querier:
-        # Allow queries of older data
-        max_concurrent: 2048
-        query_timeout: 10m
-        query_ingesters_within: 12h
-
-      query_range:
-        results_cache:
-          cache:
-            embedded_cache:
-              enabled: true
-              max_size_mb: 100
-
-      schema_config:
-        configs:
-          - from: 2020-10-24
-            store: boltdb-shipper
-            object_store: filesystem
-            schema: v11
-            index:
-              prefix: index_
-              period: 24h
-
-      ruler:
-        alertmanager_url: http://localhost:9093
-
-      limits_config:
-        reject_old_samples: false
-        reject_old_samples_max_age: 168h
-        max_entries_limit_per_query: 5000
-        max_query_series: 5000
-        # Allow for time synchronization issues
-        ingestion_rate_mb: 50
-        ingestion_burst_size_mb: 100
-        # Time window adjustments
-        max_query_lookback: 0s
-        max_query_length: 0s
-
-      # Single binary mode - Ensure single instance operation
-      single_binary:
-        replicas: 1
-        
-      # Health check configuration
-      distributor:
-        health_check_ingesters: false
-        
-      # Ingester health configuration
-      ingester_client:
-        grpc_client_config:
-          health_check_timeout: 1s

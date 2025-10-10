@@ -1,0 +1,79 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  graceful_shutdown_timeout: 30s
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /tmp/loki
+  storage:
+    filesystem:
+      chunks_directory: /tmp/loki/chunks
+      rules_directory: /tmp/loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+ingester:
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+  chunk_idle_period: 5m
+  chunk_retain_period: 30s
+  max_transfer_retries: 0
+  wal:
+    dir: /tmp/loki/wal
+    enabled: true
+  max_chunk_age: 2h
+
+querier:
+  max_concurrent: 2048
+  query_timeout: 10m
+  query_ingesters_within: 12h
+
+query_range:
+  results_cache:
+    cache:
+      embedded_cache:
+        enabled: true
+        max_size_mb: 100
+
+schema_config:
+  configs:
+    - from: 2020-10-24
+      store: boltdb-shipper
+      object_store: filesystem
+      schema: v11
+      index:
+        prefix: index_
+        period: 24h
+
+ruler:
+  alertmanager_url: http://localhost:9093
+
+limits_config:
+  reject_old_samples: false
+  reject_old_samples_max_age: 168h
+  max_entries_limit_per_query: 5000
+  max_query_series: 5000
+  ingestion_rate_mb: 50
+  ingestion_burst_size_mb: 100
+  max_query_lookback: 0s
+  max_query_length: 0s
+
+single_binary:
+  replicas: 1
+  
+distributor:
+  health_check_ingesters: false
+  
+ingester_client:
+  grpc_client_config:
+    health_check_timeout: 1s
