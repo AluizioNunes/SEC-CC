@@ -9,8 +9,10 @@ RUN apk add --no-cache python3 make g++ git
 # Copy package files
 COPY package.json package-lock.json* ./
 
-# Install dependencies
-RUN npm ci --prefer-offline --no-audit --no-fund --legacy-peer-deps || npm install --prefer-offline --no-audit --no-fund --legacy-peer-deps
+# Install dependencies with proper permissions
+RUN mkdir -p /usr/src/app/node_modules && \
+    chown -R node:node /usr/src/app && \
+    npm ci --prefer-offline --no-audit --no-fund --legacy-peer-deps || npm install --prefer-offline --no-audit --no-fund --legacy-peer-deps
 
 # Copy source
 COPY tsconfig.json tsconfig.build.json ./

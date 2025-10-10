@@ -5,8 +5,10 @@ WORKDIR /app
 # Copy package files
 COPY package.json ./package.json
 
-# Install dependencies for build
-RUN npm install --legacy-peer-deps --silent
+# Install dependencies for build with proper permissions
+RUN mkdir -p /app/node_modules && \
+    chown -R node:node /app && \
+    npm install --legacy-peer-deps --silent
 
 # Copy source code
 COPY src ./src
