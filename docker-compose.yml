@@ -261,6 +261,7 @@ services:
     volumes:
       - ./Docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./Docker/prometheus/prometheus_rules.yml:/etc/prometheus/rules/sec-alerts.yml
+      - prometheus_data:/prometheus
     ports:
       - "9090:9090"
     networks:
@@ -280,33 +281,90 @@ services:
           memory: 1G
           cpus: '0.5'
 
-  loki:
-    image: grafana/loki:2.9.8
-    container_name: CC-LOKI
-    volumes:
-      - ./Docker/loki/config.yml:/etc/loki/config.yml
+  # Jaeger - Distributed Tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: CC-JAEGER
     ports:
-      - "3100:3100"
-    networks:
-      - sec_net
-
-  promtail:
-    image: grafana/promtail:2.9.8
-    container_name: CC-PROMTAIL
+      - "16686:16686"   # UI
+      - "6831:6831/udp" # Agent (accept)
+      - "6832:6832/udp" # Agent (admin)
+      - "14268:14268"   # Collector (admin)
+      - "14250:14250"   # Collector (gRPC)
     environment:
-      - SERVICE_NAME: promtail
-      - HOST: promtail
-    volumes:
-      - ./Docker/promtail/config.yml:/etc/promtail/config.yml
-      - //var/run/docker.sock:/var/run/docker.sock:ro
-    ports:
-      - "9080:9080"
+      - COLLECTOR_OTLP_ENABLED=true
+      - SERVICE_NAME=sec-jaeger
+      - HOST=jaeger
     networks:
       - sec_net
-    # Add time synchronization service dependency
+    # Add health checks
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:16686"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # Kibana - Log Visualization
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: CC-KIBANA
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_HOST=0.0.0.0
+      - SERVER_NAME=sec-kibana
+      - SERVICE_NAME=kibana
+      - HOST=kibana
+    networks:
+      - sec_net
     depends_on:
-      - ntp
-      - loki
+      - elasticsearch
+    # Add health checks
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5601/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+
+  # Elasticsearch - Search and Analytics Engine
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: CC-ELASTICSEARCH
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - SERVICE_NAME=elasticsearch
+      - HOST=elasticsearch
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - sec_net
+    # Add health checks
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1'
 
   # 🚀 NOVOS SERVIÇOS ULTRA-REVOLUCIONÁRIOS
 
@@ -872,15 +930,5 @@ volumes:
   mongo_data:
   grafana_data:
   rabbitmq_data:
-  ethereum_data:
-  solana_data:
-  aptos_data:
-  metaverso_assets:
-  metaverso_data:
-  global_cache_data:
-  message_broker_data:
-  consul_data:
-  kafka_data:
-  ml_models:
-  ml_datasets:
-  digital_assets:
+  elasticsearch_data:
+  prometheus_data:

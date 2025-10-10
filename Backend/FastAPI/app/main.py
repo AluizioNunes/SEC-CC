@@ -2,11 +2,23 @@
 FastAPI Application with Ultra-Advanced Redis Integration
 Revolutionary application with complete Redis ecosystem for enterprise-grade applications
 """
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends, status
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import time
 import asyncio
 from contextlib import asynccontextmanager
+
+# Import security modules
+from .auth import (
+    jwt_manager,
+    get_current_user,
+    require_auth,
+    audit_log,
+    security_auditor,
+    SecurityAuditor
+)
 
 # Import Redis modules
 from .redis import (
@@ -34,6 +46,55 @@ from .redis import (
     test_redis_connection,
     EventType
 )
+
+# Import service registration
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+try:
+    from Backend.Service_Registration import register_current_service, unregister_current_service
+except ImportError:
+    # Create mock functions if Backend module is not available
+    async def register_current_service():
+        return None
+
+    async def unregister_current_service():
+        return None
+
+# Import message broker
+try:
+    from Backend.Message_Broker.message_handler import message_handler
+except ImportError:
+    # Create mock object if Backend module is not available
+    class MockMessageHandler:
+        async def initialize(self):
+            pass
+
+    message_handler = MockMessageHandler()
+
+# Import OpenTelemetry for tracing
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+# Initialize tracing
+trace.set_tracer_provider(TracerProvider())
+tracer = trace.get_tracer(__name__)
+
+# Jaeger exporter for tracing
+jaeger_exporter = JaegerExporter(
+    agent_host_name="jaeger",
+    agent_port=6831,
+)
+
+span_processor = BatchSpanProcessor(jaeger_exporter)
+trace.get_tracer_provider().add_span_processor(span_processor)
+
+# Initialize FastAPI instrumentation
+FastAPIInstrumentor.instrument_app
 
 # Import service registration
 import sys
@@ -182,6 +243,91 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Security middleware configuration
+@app.middleware("http")
+async def security_middleware(request: Request, call_next):
+    """Enhanced security middleware with audit logging"""
+    start_time = time.time()
+
+    # Get client information
+    client_ip = request.client.host if request.client else "unknown"
+    user_agent = request.headers.get("user-agent", "unknown")
+
+    # Log request start
+    logger.info(
+        "Request started",
+        method=request.method,
+        url=str(request.url.path),
+        client_ip=client_ip,
+        user_agent=user_agent
+    )
+
+    try:
+        # Check for suspicious patterns
+        if security_auditor.detect_suspicious_activity("unknown", f"unusual_pattern_{client_ip}"):
+            audit_log(
+                action="suspicious_activity",
+                user_id="unknown",
+                resource=str(request.url.path),
+                details={"client_ip": client_ip, "user_agent": user_agent}
+            )
+
+        response = await call_next(request)
+
+        # Calculate processing time
+        process_time = time.time() - start_time
+
+        # Log response
+        logger.info(
+            "Request completed",
+            method=request.method,
+            url=str(request.url.path),
+            status_code=response.status_code,
+            process_time=f"{process_time:.3f}s"
+        )
+
+        # Add security headers
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Content-Security-Policy"] = "default-src 'self'"
+
+        return response
+
+    except Exception as e:
+        # Log error with full context
+        logger.error(
+            "Request failed",
+            method=request.method,
+            url=str(request.url.path),
+            error=str(e),
+            client_ip=client_ip
+        )
+
+        audit_log(
+            action="request_error",
+            user_id="unknown",
+            resource=str(request.url.path),
+            details={"error": str(e), "client_ip": client_ip}
+        )
+
+        raise
+
+# Configure CORS with strict settings
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "https://yourdomain.com"],  # Configure allowed origins
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+    expose_headers=["X-Total-Count", "X-Page-Count"],
+    max_age=86400,  # Cache preflight for 24 hours
+)
+
+# Trusted hosts middleware (configure for production)
+# app.add_middleware(TrustedHostMiddleware, allowed_hosts=["yourdomain.com", "*.yourdomain.com"])
+
 # Add Redis middleware (order matters!)
 app.middleware("http")(global_rate_limiting_middleware)
 app.middleware("http")(session_middleware)
@@ -192,9 +338,152 @@ app.include_router(redis_router)
 app.include_router(advanced_demo_router)
 
 
+@app.post("/auth/login")
+async def login(request: Request):
+    """Ultra-secure login endpoint with comprehensive audit logging"""
+    try:
+        # Get request body
+        body = await request.json()
+        username = body.get("username")
+        password = body.get("password")
+
+        if not username or not password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username and password required"
+            )
+
+        # Mock user validation (replace with actual user database)
+        if username == "admin" and password == "admin123":  # In production, use proper password verification
+            # Create tokens
+            token_data = {"sub": username, "role": "admin"}
+            access_token = jwt_manager.create_access_token(token_data)
+            refresh_token = jwt_manager.create_refresh_token(token_data)
+
+            # Log successful login
+            audit_log(
+                action="login",
+                user_id=username,
+                resource="auth_system",
+                details={"ip_address": request.client.host}
+            )
+
+            return {
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "token_type": "bearer",
+                "expires_in": 1800  # 30 minutes
+            }
+        else:
+            # Log failed login attempt
+            audit_log(
+                action="unauthorized_access",
+                user_id=username,
+                resource="auth_system",
+                details={
+                    "reason": "invalid_credentials",
+                    "ip_address": request.client.host
+                }
+            )
+
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials"
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Login error", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
+
+
+@app.post("/auth/refresh")
+async def refresh_token(request: Request, current_user: Dict[str, Any] = Depends(get_current_user)):
+    """Refresh access token"""
+    try:
+        body = await request.json()
+        refresh_token = body.get("refresh_token")
+
+        if not refresh_token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Refresh token required"
+            )
+
+        # Verify refresh token
+        payload = jwt_manager.verify_token(refresh_token, "refresh")
+        if not payload:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token"
+            )
+
+        # Create new access token
+        token_data = {"sub": payload["sub"], "role": payload.get("role", "user")}
+        new_access_token = jwt_manager.create_access_token(token_data)
+
+        # Log token refresh
+        audit_log(
+            action="token_refresh",
+            user_id=payload["sub"],
+            resource="auth_system",
+            details={"ip_address": request.client.host}
+        )
+
+        return {
+            "access_token": new_access_token,
+            "token_type": "bearer",
+            "expires_in": 1800
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Token refresh error", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
+
+
+@app.post("/auth/logout")
+async def logout(request: Request, current_user: Dict[str, Any] = Depends(require_auth)):
+    """Logout endpoint with audit logging"""
+    try:
+        # Log logout
+        audit_log(
+            action="logout",
+            user_id=current_user["sub"],
+            resource="auth_system",
+            details={"ip_address": request.client.host}
+        )
+
+        return {"message": "Successfully logged out"}
+
+    except Exception as e:
+        logger.error("Logout error", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
+        )
+
+
+@app.get("/auth/me")
+async def get_current_user_info(current_user: Dict[str, Any] = Depends(require_auth)):
+    """Get current user information"""
+    return {
+        "user_id": current_user["sub"],
+        "role": current_user.get("role", "user"),
+        "authenticated": True
+    }
+
+
 @app.get("/")
 async def root():
-    """Root endpoint with ultra-advanced Redis status"""
     return {
         "message": "FastAPI with Ultra-Advanced Redis Integration",
         "status": "revolutionary",

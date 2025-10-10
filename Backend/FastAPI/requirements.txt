@@ -4,3 +4,30 @@ redis==5.0.8
 asyncpg==0.29.0
 motor==3.3.2
 aio-pika==9.4.1
+
+# JWT Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+
+# Security & CORS
+slowapi==0.1.9
+python-cors==1.7.0
+
+# Structured Logging
+structlog==23.2.0
+python-json-logger==2.0.7
+
+# Connection Pooling & Performance
+databases[postgresql]==0.8.0
+alembic==1.12.0
+
+# Monitoring & Tracing
+opentelemetry-api==1.21.0
+opentelemetry-sdk==1.21.0
+opentelemetry-instrumentation-fastapi==0.42b0
+jaeger-client==4.8.0
+
+# Validation & Serialization
+pydantic==2.5.0
+pydantic-settings==2.1.0

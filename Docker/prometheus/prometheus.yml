@@ -1,70 +1,45 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
-  scrape_timeout: 10s
-  external_labels:
-    monitor: 'sec-monitor'
 
 rule_files:
-  - "rules/*.yml"
+  - "rules/sec-alerts.yml"
 
-scrape_config_files:
-  - "scrape_configs/*.yml"
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
 
 scrape_configs:
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
-    scrape_timeout: 10s
-    honor_timestamps: false
-
-  - job_name: 'loki'
-    static_configs:
-      - targets: ['loki:3100']
-    metrics_path: '/metrics'
-    scrape_timeout: 10s
-    honor_timestamps: false
-
-  - job_name: 'grafana'
-    static_configs:
-      - targets: ['grafana:3000']
-    scrape_timeout: 10s
-    honor_timestamps: false
 
   - job_name: 'fastapi'
     static_configs:
       - targets: ['fastapi:8000']
+    scrape_interval: 10s
     metrics_path: '/metrics'
-    scrape_timeout: 10s
-    honor_timestamps: false
 
   - job_name: 'nestjs'
     static_configs:
       - targets: ['nestjs:3000']
+    scrape_interval: 10s
     metrics_path: '/metrics'
-    scrape_timeout: 10s
-    honor_timestamps: false
-    
-  - job_name: 'redis'
+
+  - job_name: 'redis-exporter'
     static_configs:
       - targets: ['redis-exporter:9121']
-    scrape_timeout: 10s
-    honor_timestamps: false
-      
-  - job_name: 'postgresql'
+
+  - job_name: 'grafana'
     static_configs:
-      - targets: ['postgres-exporter:9187']
-    scrape_timeout: 10s
-    honor_timestamps: false
-      
-  - job_name: 'mongodb'
+      - targets: ['grafana:3001']
+
+  - job_name: 'postgres-exporter'
     static_configs:
-      - targets: ['mongodb-exporter:9216']
-    scrape_timeout: 10s
-    honor_timestamps: false
-      
-  - job_name: 'rabbitmq'
+      - targets: ['postgresql:5432']
+
+  - job_name: 'mongodb-exporter'
     static_configs:
-      - targets: ['rabbitmq-exporter:9419']
-    scrape_timeout: 10s
-    honor_timestamps: false
+      - targets: ['mongodb:27017']
