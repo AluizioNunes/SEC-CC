@@ -91,9 +91,10 @@ Backend/FastAPI/node_modules
 Backend/NestJS/node_modules
 Backend/**/node_modules
 
-# Services directory exclusions
+# Services directory exclusions - but allow the Docker directory for volumes
 Services/**
 !Services/Frontend/**
+!Services/Docker/**
 Services/Frontend/node_modules
 Services/**/node_modules
 
