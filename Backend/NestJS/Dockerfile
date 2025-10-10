@@ -7,8 +7,8 @@ WORKDIR /usr/src/app
 # Copy package files
 COPY package.json package-lock.json* ./
 
-# Install dependencies
-RUN npm ci --prefer-offline --no-audit --no-fund --legacy-peer-deps || npm install --prefer-offline --no-audit --no-fund --legacy-peer-deps
+# Install dependencies - Simplified approach
+RUN npm install --legacy-peer-deps --no-audit --no-fund
 
 # Copy source
 COPY tsconfig.json tsconfig.build.json ./
