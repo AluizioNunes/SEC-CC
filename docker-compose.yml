@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # ========== NGINX PROXY ==========
   nginx:
     image: nginx:1.25-alpine
     container_name: CC-NGINX
@@ -9,10 +10,9 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost"]
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
-    depends_on:
-      - frontend
 
   # ========== FRONTEND REACT ==========
   frontend:
@@ -27,26 +27,10 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5173"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
 
-  # ========== REDIS CACHE ==========
-  redis:
-    image: redis:latest
-    container_name: CC-REDIS
-    ports:
-      - "6379:6379"
-    command: redis-server --requirepass redispassword2024
-    environment:
-      - REDIS_PASSWORD=redispassword2024
-    networks:
-      - sec_net
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 30s
-      timeout: 10s
   # ========== FASTAPI BACKEND ==========
   fastapi:
     build:
@@ -59,60 +43,31 @@ services:
       - sec_net
     depends_on:
       - redis
-    # Add time synchronization and health checks
     environment:
       - SERVICE_NAME=fastapi
       - HOST=fastapi
       - PORT=8000
-      - POSTGRES_URL=postgresql://sec:secpass2024@postgres:5432/secdb
       - REDIS_URL=redis://:redispassword2024@redis:6379/0
-      - JWT_SECRET_KEY=super-secret-jwt-key-change-in-production-2024
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
-      interval: 30s
-      timeout: 10s
+      interval: 15s
+      timeout: 5s
       retries: 3
-      start_period: 60s
+      start_period: 30s
 
-  # ========== NESTJS BACKEND ==========
-  nestjs:
-    image: node:20-alpine
-    container_name: CC-NESTJS
-    working_dir: /app
-    volumes:
-      - ./Backend/NestJS:/app
-      - /app/node_modules  # evita conflito com node_modules local
-    command: sh -c "npm install --legacy-peer-deps --no-audit --no-fund && npm run start:prod"
-    environment:
-      PORT: 3000
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: redispassword2024
-      SERVICE_NAME: nestjs
-      HOST: nestjs
-      NODE_ENV: production
+  # ========== REDIS CACHE ==========
+  redis:
+    image: redis:latest
+    container_name: CC-REDIS
     ports:
-      - "3000:3000"
-    networks:
-      - sec_net
-    depends_on:
-      - redis
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health/live"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-
-  # ========== TIME SYNCHRONIZATION ==========
-  ntp:
-    image: cturra/ntp:latest
-    container_name: CC-NTP
-    ports:
-      - "123:123/udp"
-    networks:
-      - sec_net
+      - "6379:6379"
+    command: redis-server --requirepass redispassword2024
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   # ========== POSTGRESQL DATABASE ==========
   postgres:
@@ -122,10 +77,6 @@ services:
       POSTGRES_USER: sec
       POSTGRES_PASSWORD: secpass2024
       POSTGRES_DB: secdb
-      SERVICE_NAME: postgresql
-      HOST: postgres
-      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
-      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -134,14 +85,9 @@ services:
       - sec_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sec -d secdb"]
-      interval: 30s
-      timeout: 10s
+      interval: 15s
+      timeout: 5s
       retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1'
 
   # ========== MONGODB DATABASE ==========
   mongodb:
@@ -149,8 +95,6 @@ services:
     container_name: CC-MONGODB
     environment:
       MONGO_INITDB_DATABASE: secmongo
-      SERVICE_NAME: mongodb
-      HOST: mongodb
       MONGO_INITDB_ROOT_USERNAME: secmongo
       MONGO_INITDB_ROOT_PASSWORD: mongopass2024
     volumes:
@@ -161,68 +105,9 @@ services:
       - sec_net
     healthcheck:
       test: mongosh --eval 'db.runCommand("ping").ok' localhost:27017/secmongo --quiet
-      interval: 30s
-      timeout: 10s
+      interval: 15s
+      timeout: 5s
       retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1'
-
-  # ========== GRAFANA DASHBOARDS ==========
-  grafana:
-    image: grafana/grafana:latest
-    container_name: CC-GRAFANA
-    ports:
-      - "3001:3000"
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin2024
-      GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_USERS_AUTO_ASSIGN_ORG: "true"
-      GF_USERS_AUTO_ASSIGN_ORG_ROLE: "Admin"
-      SERVICE_NAME: grafana
-      HOST: grafana
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./Docker/grafana/provisioning:/etc/grafana/provisioning
-      - ./Docker/grafana/dashboards:/var/lib/grafana/dashboards
-    networks:
-      - sec_net
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  # ========== PROMETHEUS METRICS ==========
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: CC-PROMETHEUS
-    environment:
-      PROMETHEUS_CONFIG_FILE: /etc/prometheus/prometheus.yml
-      SERVICE_NAME: prometheus
-      HOST: prometheus
-    # Simplified volumes - avoid conflicts
-    volumes:
-      - prometheus_data:/prometheus
-    ports:
-      - "9090:9090"
-    networks:
-      - sec_net
-    depends_on:
-      - ntp
-    healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:9090/-/healthy"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '0.5'
 
 networks:
   sec_net:
@@ -231,5 +116,3 @@ networks:
 volumes:
   postgres_data:
   mongo_data:
-  grafana_data:
-  prometheus_data:
