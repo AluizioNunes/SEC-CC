@@ -217,8 +217,8 @@ services:
       # RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS removido devido a incompatibilidade
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      - ./Docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-      - ./Docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./Services/Docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./Services/Docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
     ports:
       - "5672:5672"   # AMQP
       - "15672:15672" # Management UI
@@ -253,8 +253,8 @@ services:
       TZ: UTC
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./Docker/grafana/provisioning:/etc/grafana/provisioning
-      - ./Docker/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./Services/Docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./Services/Docker/grafana/dashboards:/var/lib/grafana/dashboards
     networks:
       - sec_net
     # Add health checks
@@ -410,7 +410,7 @@ services:
   #   ports:
   #     - "8501:8501"
   #   volumes:
-  #     - ./services/ai/models:/models
+  #     - ./Services/ai/models:/models
   #   environment:
   #     - MODEL_NAME=ultra_ai_model
   #   command: >
@@ -422,7 +422,7 @@ services:
 
   # openai-api-proxy:
   #   build:
-  #     context: ./services/ai
+  #     context: ./Services/ai
   #     dockerfile: Dockerfile
   #   container_name: CC-OPENAI-PROXY
   #   ports:
@@ -439,7 +439,7 @@ services:
   # Edge Computing Infrastructure (COMENTADO - Configure nós edge primeiro)
   # edge-orchestrator:
   #   build:
-  #     context: ./services/edge
+  #     context: ./Services/edge
   #     dockerfile: Dockerfile
   #   container_name: CC-EDGE-ORCHESTRATOR
   #   ports:
@@ -456,7 +456,7 @@ services:
   # Metaverso Infrastructure (COMENTADO - Configure assets 3D primeiro)
   # metaverso-server:
   #   build:
-  #     context: ./services/metaverso
+  #     context: ./Services/metaverso
   #     dockerfile: Dockerfile
   #   container_name: CC-METAVERSO
   #   ports:
@@ -477,7 +477,7 @@ services:
   # Quantum Security Infrastructure (COMENTADO - Configure algoritmos quânticos primeiro)
   # quantum-security:
   #   build:
-  #     context: ./services/quantum
+  #     context: ./Services/quantum
   #     dockerfile: Dockerfile
   #   container_name: CC-QUANTUM-SECURITY
   #   ports:
@@ -494,7 +494,7 @@ services:
   # Business Revolution Infrastructure (COMENTADO - Configure modelos de negócio primeiro)
   # business-intelligence:
   #   build:
-  #     context: ./services/business
+  #     context: ./Services/business
   #     dockerfile: Dockerfile
   #   container_name: CC-BUSINESS-INTELLIGENCE
   #   ports:
@@ -516,8 +516,8 @@ services:
   #     - "443:443"
   #     - "80:80"
   #   volumes:
-  #     - ./Docker/global-lb/nginx.conf:/etc/nginx/nginx.conf:ro
-  #     - ./Docker/global-lb/ssl:/etc/nginx/ssl:ro
+  #     - ./Services/Docker/global-lb/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./Services/Docker/global-lb/ssl:/etc/nginx/ssl:ro
   #   networks:
   #     - sec_net
   #   depends_on:
@@ -538,7 +538,7 @@ services:
   # Advanced Analytics Engine (COMENTADO - Configure modelos primeiro)
   # analytics-engine:
   #   build:
-  #     context: ./services/analytics
+  #     context: ./Services/analytics
   #     dockerfile: Dockerfile
   #   container_name: CC-ANALYTICS-ENGINE
   #   ports:
@@ -555,7 +555,7 @@ services:
   # Real-time Collaboration Platform (COMENTADO - Configure WebSocket primeiro)
   # collaboration-hub:
   #   build:
-  #     context: ./services/collaboration
+  #     context: ./Services/collaboration
   #     dockerfile: Dockerfile
   #   container_name: CC-COLLABORATION
   #   ports:
@@ -572,7 +572,7 @@ services:
   # IoT Edge Devices Manager (COMENTADO - Configure dispositivos primeiro)
   # iot-edge-manager:
   #   build:
-  #     context: ./services/iot
+  #     context: ./Services/iot
   #     dockerfile: Dockerfile
   #   container_name: CC-IOT-EDGE
   #   ports:
@@ -620,7 +620,7 @@ services:
   #   ports:
   #     - "8091:8091"
   #   volumes:
-  #     - ./Docker/observability:/etc/agent
+  #     - ./Services/Docker/observability:/etc/agent
   #   command: --config.file=/etc/agent/config.yml --server.http.listen-port=8091
   #   networks:
   #     - sec_net
@@ -641,7 +641,7 @@ services:
   # API Gateway with Advanced Features (COMENTADO - Configure gateway primeiro)
   # api-gateway:
   #   build:
-  #     context: ./services/gateway
+  #     context: ./Services/gateway
   #     dockerfile: Dockerfile
   #   container_name: CC-API-GATEWAY
   #   ports:
@@ -660,7 +660,7 @@ services:
   # Advanced Security Operations Center (COMENTADO - Configure SOC primeiro)
   # soc-platform:
   #   build:
-  #     context: ./services/soc
+  #     context: ./Services/soc
   #     dockerfile: Dockerfile
   #   container_name: CC-SOC-PLATFORM
   #   ports:
@@ -677,7 +677,7 @@ services:
   # Multi-Cloud Management Platform (COMENTADO - Configure provedores cloud primeiro)
   # multi-cloud-manager:
   #   build:
-  #     context: ./services/cloud
+  #     context: ./Services/cloud
   #     dockerfile: Dockerfile
   #   container_name: CC-MULTI-CLOUD
   #   ports:
@@ -696,7 +696,7 @@ services:
   # Advanced Data Pipeline (COMENTADO - Configure pipeline primeiro)
   # data-pipeline:
   #   build:
-  #     context: ./services/pipeline
+  #     context: ./Services/pipeline
   #     dockerfile: Dockerfile
   #   container_name: CC-DATA-PIPELINE
   #   ports:
@@ -713,7 +713,7 @@ services:
   # Machine Learning Model Training (COMENTADO - Configure modelos primeiro)
   # ml-training-cluster:
   #   build:
-  #     context: ./services/ml-training
+  #     context: ./Services/ml-training
   #     dockerfile: Dockerfile
   #   container_name: CC-ML-TRAINING
   #   ports:
@@ -733,7 +733,7 @@ services:
   # Advanced Recommendation Engine (COMENTADO - Configure recomendações primeiro)
   # recommendation-engine:
   #   build:
-  #     context: ./services/recommendation
+  #     context: ./Services/recommendation
   #     dockerfile: Dockerfile
   #   container_name: CC-RECOMMENDATION
   #   ports:
@@ -761,7 +761,7 @@ services:
   # Advanced Threat Intelligence Platform (COMENTADO - Configure threat feeds primeiro)
   # threat-intelligence:
   #   build:
-  #     context: ./services/threat-intel
+  #     context: ./Services/threat-intel
   #     dockerfile: Dockerfile
   #   container_name: CC-THREAT-INTEL
   #   ports:
@@ -778,7 +778,7 @@ services:
   # Zero-Trust Security Platform (COMENTADO - Configure identidade primeiro)
   # zero-trust-platform:
   #   build:
-  #     context: ./services/zero-trust
+  #     context: ./Services/zero-trust
   #     dockerfile: Dockerfile
   #   container_name: CC-ZERO-TRUST
   #   ports:
@@ -825,7 +825,7 @@ services:
   # Advanced Workflow Engine (COMENTADO - Configure workflows primeiro)
   # workflow-engine:
   #   build:
-  #     context: ./services/workflow
+  #     context: ./Services/workflow
   #     dockerfile: Dockerfile
   #   container_name: CC-WORKFLOW
   #   ports:
@@ -842,7 +842,7 @@ services:
   # Digital Asset Management (COMENTADO - Configure assets primeiro)
   # digital-asset-manager:
   #   build:
-  #     context: ./services/digital-assets
+  #     context: ./Services/digital-assets
   #     dockerfile: Dockerfile
   #   container_name: CC-DIGITAL-ASSETS
   #   ports:
@@ -861,7 +861,7 @@ services:
   # Advanced Search Engine (COMENTADO - Configure Elasticsearch primeiro)
   # search-engine:
   #   build:
-  #     context: ./services/search
+  #     context: ./Services/search
   #     dockerfile: Dockerfile
   #   container_name: CC-SEARCH-ENGINE
   #   ports:
@@ -878,7 +878,7 @@ services:
   # Global Configuration Management (COMENTADO - Configure config primeiro)
   # config-management:
   #   build:
-  #     context: ./services/config
+  #     context: ./Services/config
   #     dockerfile: Dockerfile
   #   container_name: CC-CONFIG-MANAGEMENT
   #   ports:
