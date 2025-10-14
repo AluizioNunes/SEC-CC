@@ -148,7 +148,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 <Button type="text" icon={<LoginOutlined />} block>
                   <Link to="/login">LOGIN</Link>
                 </Button>
-                <Button type="primary" icon={<UserAddOutlined />} block>
+                <Button type="primary" icon={<UserOutlined />} block>
                   <Link to="/cadastro">CADASTRAR</Link>
                 </Button>
               </div>
@@ -232,7 +232,7 @@ const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
 
-            <Link to="/home" style={{ textDecoration: 'none' }}>
+            <Link to="/" style={{ textDecoration: 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 <div style={{
                   width: '40px',
@@ -272,47 +272,101 @@ const Navbar: React.FC<NavbarProps> = ({
           </div>
         </Col>
 
-        {/* Área de Autenticação - Layout original */}
-        <Col xs={24} sm={16} md={18} lg={20}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-            {/* Menu de Navegação */}
-            <Menu
-              mode="horizontal"
-              items={getMenuItems().map(item => ({
-                key: item.key,
-                icon: item.icon,
-                label: <Link to={`/${item.key}`}>{item.label}</Link>,
-              }))}
-              style={{
-                border: 'none',
-                background: 'transparent',
-                marginRight: '24px'
-              }}
-              theme="light"
-            />
-
-            {/* Área de Autenticação */}
+        {/* Área de Autenticação - Simplificada */}
+        <Col xs={24} sm={24} md={24} lg={24}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: '12px',
+            paddingRight: '8px'
+          }}>
+            {/* Informações do Usuário Logado */}
             {user ? (
-              <Dropdown overlay={userMenu} trigger={['click']}>
+              <>
                 <div style={{
                   display: 'flex',
-                  alignItems: 'center',
-                  cursor: 'pointer',
-                  padding: '8px 12px',
-                  borderRadius: '6px',
-                  transition: 'background 0.3s'
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  fontSize: '11px',
+                  color: '#666',
+                  lineHeight: '1.1',
+                  maxWidth: '180px',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
                 }}>
-                  <Avatar
-                    icon={<UserOutlined />}
-                    style={{
-                      marginRight: 8,
-                      backgroundColor: user.profile === 'admin' ? '#722ed1' : '#1e3c72'
-                    }}
-                  />
-                  <span style={{ marginRight: 8 }}>{user.name.toUpperCase()}</span>
-                  <DownOutlined />
+                  <div style={{
+                    fontWeight: 'bold',
+                    color: '#1890ff',
+                    fontSize: '12px',
+                    marginBottom: '2px',
+                    maxWidth: '100%',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {user.name.length > 15 ? `${user.name.substring(0, 15)}...` : user.name.toUpperCase()}
+                  </div>
+                  <div style={{
+                    color: '#52c41a',
+                    fontSize: '10px',
+                    marginBottom: '1px'
+                  }}>
+                    {user.profile.toUpperCase()}
+                  </div>
+                  <div style={{
+                    fontSize: '9px',
+                    color: '#999',
+                    marginBottom: '1px'
+                  }}>
+                    {user.city} - {user.state}
+                  </div>
+                  <div style={{
+                    fontSize: '8px',
+                    color: '#ccc'
+                  }}>
+                    Conectado: {user.onlineTime}
+                  </div>
                 </div>
-              </Dropdown>
+
+                <Dropdown overlay={userMenu} trigger={['click']}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    padding: '6px 10px',
+                    borderRadius: '6px',
+                    transition: 'background 0.3s',
+                    backgroundColor: 'rgba(24, 144, 255, 0.1)',
+                    border: '1px solid #1890ff',
+                    minWidth: '75px',
+                    justifyContent: 'center'
+                  }}>
+                    <Avatar
+                      icon={<UserOutlined />}
+                      style={{
+                        marginRight: 6,
+                        backgroundColor: user.profile === 'admin' ? '#722ed1' : '#1e3c72',
+                        width: '20px',
+                        height: '20px'
+                      }}
+                      size="small"
+                    />
+                    <span style={{
+                      fontWeight: 'bold',
+                      color: '#1890ff',
+                      fontSize: '11px'
+                    }}>
+                      LOGOUT
+                    </span>
+                    <DownOutlined style={{
+                      color: '#1890ff',
+                      fontSize: '10px',
+                      marginLeft: '4px'
+                    }} />
+                  </div>
+                </Dropdown>
+              </>
             ) : (
               <div style={{ display: 'flex', gap: '8px' }}>
                 <Button type="text" icon={<LoginOutlined />}>

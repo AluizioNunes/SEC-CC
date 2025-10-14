@@ -7,6 +7,10 @@ export interface User {
   profile: 'public' | 'user' | 'admin';
   type?: 'PF' | 'PJ';
   status?: 'pending' | 'approved' | 'rejected' | 'suspended';
+  city?: string;
+  state?: string;
+  loginTime?: string;
+  onlineTime?: string;
 }
 
 interface AuthContextType {
@@ -50,9 +54,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (email.includes('admin') || email.includes('sec')) {
           mockUser = {
             id: '1',
-            name: 'Comissão SEC',
+            name: 'Zezinho Correa',
             email: email,
             profile: 'admin',
+            city: 'Manaus',
+            state: 'AM',
+            loginTime: new Date().toLocaleString('pt-BR'),
+            onlineTime: '2h 15min'
           };
         } else {
           mockUser = {
@@ -61,7 +69,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             email: email,
             profile: 'user',
             type: email.includes('pj') ? 'PJ' : 'PF',
-            status: 'pending',
+            status: 'approved',
+            city: 'Manaus',
+            state: 'AM',
+            loginTime: new Date().toLocaleString('pt-BR'),
+            onlineTime: '45min'
           };
         }
 

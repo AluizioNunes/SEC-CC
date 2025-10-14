@@ -1,56 +1,81 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Row,
   Col,
   Card,
   Typography,
   Statistic,
-  Progress,
   Button,
   Space,
   Divider,
-  List,
-  Avatar,
-  Tag,
-  Timeline
+  Select,
+  DatePicker,
+  Radio,
+  Tabs
 } from 'antd';
 import {
   UserOutlined,
   TeamOutlined,
-  CheckCircleOutlined,
-  InfoCircleOutlined,
-  PhoneOutlined,
-  FileTextOutlined,
-  ArrowRightOutlined,
-  TrophyOutlined,
-  SafetyOutlined,
-  ClockCircleOutlined,
   BarChartOutlined,
   PieChartOutlined,
-  LineChartOutlined
+  LineChartOutlined,
+  CalendarOutlined,
+  DownloadOutlined,
+  FileTextOutlined,
+  SafetyOutlined,
+  TrophyOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined
 } from '@ant-design/icons';
-import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ReactECharts from 'echarts-for-react';
 
-const { Title, Paragraph, Text } = Typography;
-const { Countdown } = Statistic;
+const { Title, Paragraph } = Typography;
+const { TabPane } = Tabs;
+const { RangePicker } = DatePicker;
+const { Option } = Select;
 
 const Home: React.FC = () => {
-  // Dados para os gráficos
-  const chartData = {
+  const [timeRange, setTimeRange] = useState('month');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
+  // Dados mockados baseados na Lei do Cadastro
+  const statsData = {
+    pessoasFisicas: {
+      total: 1847,
+      hoje: 12,
+      semana: 89,
+      mes: 342,
+      ano: 1847,
+      tendencia: '+12%'
+    },
+    pessoasJuridicas: {
+      total: 423,
+      hoje: 3,
+      semana: 18,
+      mes: 67,
+      ano: 423,
+      tendencia: '+8%'
+    }
+  };
+
+  // Gráfico de distribuição por categoria (baseado na Lei)
+  const categoriaChartData = {
     tooltip: {
-      trigger: 'item'
+      trigger: 'item',
+      formatter: '{b}: {c} ({d}%)'
     },
     legend: {
-      top: '5%',
-      left: 'center'
+      orient: 'vertical',
+      left: 'left',
+      top: '20%'
     },
     series: [
       {
-        name: 'Cadastro por Categoria',
+        name: 'Categorias Culturais',
         type: 'pie',
-        radius: ['40%', '70%'],
+        radius: ['30%', '70%'],
+        center: ['60%', '50%'],
         avoidLabelOverlap: false,
         label: {
           show: false,
@@ -59,29 +84,28 @@ const Home: React.FC = () => {
         emphasis: {
           label: {
             show: true,
-            fontSize: '18',
+            fontSize: '16',
             fontWeight: 'bold'
           }
         },
-        labelLine: {
-          show: false
-        },
         data: [
-          { value: 1250, name: 'Pessoa Física' },
-          { value: 750, name: 'Pessoa Jurídica' },
-          { value: 300, name: 'Em Análise' },
-          { value: 200, name: 'Pendente' }
+          { value: 847, name: 'Artes Visuais', itemStyle: { color: '#1890ff' } },
+          { value: 623, name: 'Música', itemStyle: { color: '#52c41a' } },
+          { value: 423, name: 'Teatro/Cinema', itemStyle: { color: '#faad14' } },
+          { value: 234, name: 'Dança', itemStyle: { color: '#722ed1' } },
+          { value: 143, name: 'Literatura', itemStyle: { color: '#eb2f96' } }
         ]
       }
     ]
   };
 
-  const lineChartData = {
+  // Gráfico de evolução temporal
+  const evolutionChartData = {
     tooltip: {
       trigger: 'axis'
     },
     legend: {
-      data: ['Cadastros PF', 'Cadastros PJ', 'Total']
+      data: ['Pessoa Física', 'Pessoa Jurídica', 'Total']
     },
     grid: {
       left: '3%',
@@ -95,26 +119,82 @@ const Home: React.FC = () => {
       data: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
     },
     yAxis: {
-      type: 'value'
+      type: 'value',
+      name: 'Número de Cadastros'
     },
     series: [
       {
-        name: 'Cadastros PF',
+        name: 'Pessoa Física',
         type: 'line',
         stack: 'Total',
-        data: [120, 132, 101, 134, 90, 230, 210, 220, 240, 250, 260, 280]
+        data: [120, 132, 101, 134, 90, 230, 210, 220, 240, 250, 260, 280],
+        itemStyle: { color: '#1890ff' }
       },
       {
-        name: 'Cadastros PJ',
+        name: 'Pessoa Jurídica',
         type: 'line',
         stack: 'Total',
-        data: [220, 182, 191, 234, 290, 330, 310, 320, 340, 360, 380, 400]
+        data: [220, 182, 191, 234, 290, 330, 310, 320, 340, 360, 380, 400],
+        itemStyle: { color: '#52c41a' }
       },
       {
         name: 'Total',
         type: 'line',
-        stack: 'Total',
-        data: [340, 314, 292, 368, 380, 560, 520, 540, 580, 610, 640, 680]
+        data: [340, 314, 292, 368, 380, 560, 520, 540, 580, 610, 640, 680],
+        itemStyle: { color: '#722ed1' }
+      }
+    ]
+  };
+
+  // Gráfico de distribuição regional (baseado na Lei)
+  const regionalChartData = {
+    tooltip: {
+      trigger: 'item'
+    },
+    legend: {
+      orient: 'vertical',
+      left: 'left'
+    },
+    series: [
+      {
+        name: 'Cadastros por Região',
+        type: 'pie',
+        radius: '50%',
+        data: [
+          { value: 1200, name: 'Manaus', itemStyle: { color: '#1890ff' } },
+          { value: 450, name: 'Interior', itemStyle: { color: '#52c41a' } },
+          { value: 320, name: 'Outros Estados', itemStyle: { color: '#faad14' } },
+          { value: 280, name: 'Não Informado', itemStyle: { color: '#722ed1' } }
+        ],
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)'
+          }
+        }
+      }
+    ]
+  };
+
+  // Gráfico de status dos cadastros (baseado na Lei)
+  const statusChartData = {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} ({d}%)'
+    },
+    series: [
+      {
+        name: 'Status dos Cadastros',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        center: ['50%', '50%'],
+        data: [
+          { value: 1560, name: 'Homologados', itemStyle: { color: '#52c41a' } },
+          { value: 423, name: 'Em Análise', itemStyle: { color: '#1890ff' } },
+          { value: 187, name: 'Pendentes', itemStyle: { color: '#faad14' } },
+          { value: 100, name: 'Indeferidos', itemStyle: { color: '#ff4d4f' } }
+        ]
       }
     ]
   };
@@ -145,263 +225,188 @@ const Home: React.FC = () => {
         minHeight: 'calc(100vh - 140px)'
       }}
     >
-      {/* Estatísticas e Gráficos em linha */}
+      {/* Cards de Estatísticas - Pessoas Físicas e Jurídicas */}
       <motion.div variants={itemVariants} style={{ marginBottom: '24px' }}>
         <Row gutter={[16, 16]}>
-          {/* Estatísticas do Sistema */}
-          <Col xs={24} sm={8}>
-            <Card>
+          <Col xs={24} sm={12} lg={6}>
+            <Card
+              style={{
+                textAlign: 'center',
+                borderLeft: '4px solid #1890ff',
+                background: 'linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%)'
+              }}
+            >
+              <Statistic
+                title={
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <UserOutlined style={{ color: '#1890ff' }} />
+                    <span>Pessoas Físicas</span>
+                  </div>
+                }
+                value={statsData.pessoasFisicas.total}
+                suffix="cadastradas"
+                valueStyle={{ color: '#1890ff', fontSize: '24px' }}
+              />
+              <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                <span style={{ color: '#52c41a', fontWeight: 'bold' }}>
+                  {statsData.pessoasFisicas.tendencia}
+                </span>
+                {' '}vs mês anterior
+              </div>
+            </Card>
+          </Col>
+
+          <Col xs={24} sm={12} lg={6}>
+            <Card
+              style={{
+                textAlign: 'center',
+                borderLeft: '4px solid #52c41a',
+                background: 'linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%)'
+              }}
+            >
+              <Statistic
+                title={
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <TeamOutlined style={{ color: '#52c41a' }} />
+                    <span>Pessoas Jurídicas</span>
+                  </div>
+                }
+                value={statsData.pessoasJuridicas.total}
+                suffix="cadastradas"
+                valueStyle={{ color: '#52c41a', fontSize: '24px' }}
+              />
+              <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                <span style={{ color: '#52c41a', fontWeight: 'bold' }}>
+                  {statsData.pessoasJuridicas.tendencia}
+                </span>
+                {' '}vs mês anterior
+              </div>
+            </Card>
+          </Col>
+
+          <Col xs={24} sm={12} lg={6}>
+            <Card
+              style={{
+                textAlign: 'center',
+                borderLeft: '4px solid #faad14',
+                background: 'linear-gradient(135deg, #fffbe6 0%, #ffe58f 100%)'
+              }}
+            >
               <Statistic
                 title="Total de Cadastros"
-                value={2500}
-                prefix={<UserOutlined />}
-                suffix="cadastros"
-                valueStyle={{ color: '#1890ff' }}
+                value={statsData.pessoasFisicas.total + statsData.pessoasJuridicas.total}
+                valueStyle={{ color: '#faad14', fontSize: '24px' }}
               />
+              <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                Sistema ativo desde 2023
+              </div>
             </Card>
           </Col>
-          <Col xs={24} sm={8}>
-            <Card>
+
+          <Col xs={24} sm={12} lg={6}>
+            <Card
+              style={{
+                textAlign: 'center',
+                borderLeft: '4px solid #722ed1',
+                background: 'linear-gradient(135deg, #f9f0ff 0%, #efdbff 100%)'
+              }}
+            >
               <Statistic
-                title="Em Análise"
-                value={320}
-                prefix={<ClockCircleOutlined />}
-                suffix="pendentes"
-                valueStyle={{ color: '#faad14' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Card>
-              <Statistic
-                title="Taxa de Aprovação"
+                title="Taxa de Homologação"
                 value={87}
-                prefix={<CheckCircleOutlined />}
                 suffix="%"
-                valueStyle={{ color: '#52c41a' }}
+                valueStyle={{ color: '#722ed1', fontSize: '24px' }}
               />
+              <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                <span style={{ color: '#52c41a', fontWeight: 'bold' }}>+5%</span> vs mês anterior
+              </div>
             </Card>
           </Col>
         </Row>
       </motion.div>
 
-      {/* Gráficos e Timeline em linha */}
+      {/* Gráficos Principais */}
       <motion.div variants={itemVariants} style={{ marginBottom: '24px' }}>
-        <Row gutter={[16, 16]}>
-          {/* Gráfico Principal */}
-          <Col xs={24} lg={8}>
+        <Tabs defaultActiveKey="evolution" type="card">
+          <TabPane
+            tab={
+              <span>
+                <LineChartOutlined />
+                Evolução Temporal
+              </span>
+            }
+            key="evolution"
+          >
             <Card
               title={
-                <span>
-                  <BarChartOutlined style={{ marginRight: '8px' }} />
-                  Estatísticas de Cadastro
-                </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Evolução de Cadastros por Período</span>
+                  <Select
+                    defaultValue="month"
+                    style={{ width: 120 }}
+                    onChange={setTimeRange}
+                  >
+                    <Option value="day">Por Dia</Option>
+                    <Option value="week">Por Semana</Option>
+                    <Option value="month">Por Mês</Option>
+                    <Option value="year">Por Ano</Option>
+                  </Select>
+                </div>
               }
-              style={{ height: '350px' }}
             >
               <ReactECharts
-                option={chartData}
-                style={{ height: '280px', width: '100%' }}
+                option={evolutionChartData}
+                style={{ height: '400px', width: '100%' }}
               />
             </Card>
-          </Col>
+          </TabPane>
 
-          {/* Evolução Mensal */}
-          <Col xs={24} lg={8}>
-            <Card
-              title={
-                <span>
-                  <PieChartOutlined style={{ marginRight: '8px' }} />
-                  Evolução Mensal
-                </span>
-              }
-              style={{ height: '350px' }}
-            >
+          <TabPane
+            tab={
+              <span>
+                <PieChartOutlined />
+                Por Categoria
+              </span>
+            }
+            key="categories"
+          >
+            <Row gutter={[16, 16]}>
+              <Col xs={24} lg={12}>
+                <Card title="Categorias Culturais (Lei 6.306/2023)">
+                  <ReactECharts
+                    option={categoriaChartData}
+                    style={{ height: '350px', width: '100%' }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} lg={12}>
+                <Card title="Distribuição Regional">
+                  <ReactECharts
+                    option={regionalChartData}
+                    style={{ height: '350px', width: '100%' }}
+                  />
+                </Card>
+              </Col>
+            </Row>
+          </TabPane>
+
+          <TabPane
+            tab={
+              <span>
+                <BarChartOutlined />
+                Status dos Cadastros
+              </span>
+            }
+            key="status"
+          >
+            <Card title="Status dos Cadastros (Conforme Lei 6.306/2023)">
               <ReactECharts
-                option={lineChartData}
-                style={{ height: '280px', width: '100%' }}
+                option={statusChartData}
+                style={{ height: '400px', width: '100%' }}
               />
             </Card>
-          </Col>
-
-          {/* Últimas Conquistas */}
-          <Col xs={24} lg={8}>
-            <Card
-              title={
-                <span>
-                  <TrophyOutlined style={{ marginRight: '8px' }} />
-                  Últimas Conquistas
-                </span>
-              }
-              style={{ height: '350px' }}
-            >
-              <Timeline>
-                <Timeline.Item color="green">
-                  <p>Meta de 2.500 cadastros atingida!</p>
-                  <small>Hoje às 14:30</small>
-                </Timeline.Item>
-                <Timeline.Item color="blue">
-                  <p>Novos recursos de análise implementados</p>
-                  <small>Ontem às 16:45</small>
-                </Timeline.Item>
-                <Timeline.Item color="orange">
-                  <p>Sistema de notificações aprimorado</p>
-                  <small>2 dias atrás</small>
-                </Timeline.Item>
-                <Timeline.Item>
-                  <p>Integração com APIs externas concluída</p>
-                  <small>3 dias atrás</small>
-                </Timeline.Item>
-              </Timeline>
-            </Card>
-          </Col>
-        </Row>
-      </motion.div>
-
-      {/* Cards de Ação Rápida - Mais compactos */}
-      <motion.div variants={itemVariants} style={{ marginBottom: '24px' }}>
-        <Card
-          title={
-            <span>
-              <ArrowRightOutlined style={{ marginRight: '8px' }} />
-              Ações Rápidas
-            </span>
-          }
-        >
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={8}>
-              <Card
-                hoverable
-                style={{
-                  textAlign: 'center',
-                  border: '2px solid #1890ff',
-                  borderRadius: '8px'
-                }}
-                bodyStyle={{ padding: '16px' }}
-              >
-                <UserOutlined style={{ fontSize: '24px', color: '#1890ff', marginBottom: '12px' }} />
-                <Title level={5} style={{ color: '#1890ff', marginBottom: '8px' }}>
-                  Novo Cadastro PF
-                </Title>
-                <Paragraph style={{ marginBottom: '12px', fontSize: '13px' }}>
-                  Inicie o cadastro de pessoa física para trabalhadores da cultura.
-                </Paragraph>
-                <Link to="/cadastro">
-                  <Button type="primary" size="small" block>
-                    Cadastrar PF
-                  </Button>
-                </Link>
-              </Card>
-            </Col>
-
-            <Col xs={24} sm={8}>
-              <Card
-                hoverable
-                style={{
-                  textAlign: 'center',
-                  border: '2px solid #52c41a',
-                  borderRadius: '8px'
-                }}
-                bodyStyle={{ padding: '16px' }}
-              >
-                <TeamOutlined style={{ fontSize: '24px', color: '#52c41a', marginBottom: '12px' }} />
-                <Title level={5} style={{ color: '#52c41a', marginBottom: '8px' }}>
-                  Novo Cadastro PJ
-                </Title>
-                <Paragraph style={{ marginBottom: '12px', fontSize: '13px' }}>
-                  Cadastre espaços culturais e organizações do Amazonas.
-                </Paragraph>
-                <Link to="/cadastro">
-                  <Button type="primary" size="small" block style={{ background: '#52c41a', borderColor: '#52c41a' }}>
-                    Cadastrar PJ
-                  </Button>
-                </Link>
-              </Card>
-            </Col>
-
-            <Col xs={24} sm={8}>
-              <Card
-                hoverable
-                style={{
-                  textAlign: 'center',
-                  border: '2px solid #faad14',
-                  borderRadius: '8px'
-                }}
-                bodyStyle={{ padding: '16px' }}
-              >
-                <FileTextOutlined style={{ fontSize: '24px', color: '#faad14', marginBottom: '12px' }} />
-                <Title level={5} style={{ color: '#faad14', marginBottom: '8px' }}>
-                  Ver Resultados
-                </Title>
-                <Paragraph style={{ marginBottom: '12px', fontSize: '13px' }}>
-                  Consulte a lista pública de cadastros homologados.
-                </Paragraph>
-                <Link to="/resultados">
-                  <Button type="primary" size="small" block style={{ background: '#faad14', borderColor: '#faad14' }}>
-                    Ver Resultados
-                  </Button>
-                </Link>
-              </Card>
-            </Col>
-          </Row>
-        </Card>
-      </motion.div>
-
-      {/* Sobre o Sistema - Sem status do sistema */}
-      <motion.div variants={itemVariants}>
-        <Card
-          title={
-            <span>
-              <InfoCircleOutlined style={{ marginRight: '8px' }} />
-              Sobre o Sistema SEC
-            </span>
-          }
-        >
-          <Row gutter={[16, 16]}>
-            <Col xs={24} lg={16}>
-              <div>
-                <Title level={4} style={{ marginBottom: '16px' }}>
-                  Sobre o Sistema SEC
-                </Title>
-                <Paragraph>
-                  O Sistema de Cadastro Estadual de Cultura (SEC) é uma plataforma desenvolvida
-                  para facilitar o cadastro e gestão de trabalhadores da cultura e espaços culturais
-                  no Estado do Amazonas, conforme estabelecido pela Lei nº 6.306/2023.
-                </Paragraph>
-                <Paragraph>
-                  Nossa missão é promover a cultura amazonense através de um sistema transparente,
-                  eficiente e acessível a todos os cidadãos que contribuem para o desenvolvimento
-                  cultural do nosso estado.
-                </Paragraph>
-              </div>
-            </Col>
-
-            <Col xs={24} lg={8}>
-              <div style={{ textAlign: 'center' }}>
-                <Title level={4} style={{ marginBottom: '16px' }}>
-                  Links Importantes
-                </Title>
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <Link to="/sobre">
-                    <Button type="link" icon={<InfoCircleOutlined />}>
-                      Sobre o Cadastro
-                    </Button>
-                  </Link>
-                  <Link to="/contato">
-                    <Button type="link" icon={<PhoneOutlined />}>
-                      Fale Conosco
-                    </Button>
-                  </Link>
-                  <Link to="/resultados">
-                    <Button type="link" icon={<FileTextOutlined />}>
-                      Resultados Oficiais
-                    </Button>
-                  </Link>
-                </Space>
-              </div>
-            </Col>
-          </Row>
-        </Card>
+          </TabPane>
+        </Tabs>
       </motion.div>
     </motion.div>
   );
