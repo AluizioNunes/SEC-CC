@@ -1,24 +1,34 @@
-# Simplified NestJS Dockerfile for Docker deployment
-
-FROM node:20-alpine
+# NestJS Complete Project Dockerfile
+FROM node:20-alpine AS base
 
 WORKDIR /usr/src/app
+
+# Install build deps
+RUN apk add --no-cache python3 make g++ git
 
 # Copy package files
 COPY package.json package-lock.json* ./
 
-# Install only production dependencies - simplified
-RUN npm install --production --legacy-peer-deps --no-audit --no-fund
+# Install dependencies
+RUN npm ci --prefer-offline --no-audit --no-fund --legacy-peer-deps || npm install --prefer-offline --no-audit --no-fund --legacy-peer-deps
 
-# Copy source code
-COPY src ./src
+# Copy source
 COPY tsconfig.json tsconfig.build.json ./
+COPY src ./src
+COPY test ./test
 
-# Build the application
-RUN npm install -g @nestjs/cli typescript
-RUN npx tsc
+# Build application
+RUN npm run build --verbose
+
+# Runtime image
+FROM node:20-alpine AS runtime
+WORKDIR /usr/src/app
+ENV NODE_ENV=production
+
+# Copy only necessary files
+COPY --from=base /usr/src/app/node_modules ./node_modules
+COPY --from=base /usr/src/app/dist ./dist
+COPY --from=base /usr/src/app/package.json ./
 
 EXPOSE 3000
-
-# Start the application
 CMD ["node", "dist/main.js"]

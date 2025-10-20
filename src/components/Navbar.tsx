@@ -7,97 +7,125 @@ import {
   SettingOutlined,
   LogoutOutlined,
   DownOutlined,
-  MenuUnfoldOutlined,
+  ArrowRightOutlined,
+  DashboardOutlined,
+  MenuOutlined,
   MenuFoldOutlined,
-  ArrowRightOutlined
+  MenuUnfoldOutlined,
 } from '@ant-design/icons';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import logoImage from '../Images/SEC_GOV-LogoOficial.png';
+import { useI18n } from '../i18n/I18nContext';
+import AppDrawer from './AppDrawer';
 
 interface NavbarProps {
-  onMobileMenuToggle?: () => void;
-  onSidebarToggle?: () => void;
-  sidebarCollapsed?: boolean;
   mobile?: boolean;
   showBackButton?: boolean;
   backButtonText?: string;
   backButtonPath?: string;
+  sidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 const Navbar: React.FC<NavbarProps> = ({
-  onMobileMenuToggle,
-  onSidebarToggle,
-  sidebarCollapsed = false,
   mobile = false,
   showBackButton = false,
   backButtonText = "Voltar",
-  backButtonPath = "/"
+  backButtonPath = "/",
+  sidebarCollapsed = true,
+  onToggleSidebar,
 }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { t, locale, setLocale } = useI18n();
 
   const handleLogout = () => {
     logout();
+    navigate('/login');
   };
 
   const publicMenuItems = [
     {
       key: 'home',
       icon: <UserOutlined />,
-      label: 'INÍCIO',
+      label: t('nav.home'),
     },
     {
       key: 'sobre',
       icon: <UserOutlined />,
-      label: 'SOBRE',
+      label: t('nav.sobre'),
     },
     {
       key: 'contato',
       icon: <UserOutlined />,
-      label: 'CONTATO',
+      label: 'Contato',
+    },
+    {
+      key: 'oportunidades',
+      icon: <UserOutlined />,
+      label: t('nav.oportunidades'),
+    },
+    {
+      key: 'eventos',
+      icon: <UserOutlined />,
+      label: t('nav.eventos'),
+    },
+    {
+      key: 'espacos',
+      icon: <UserOutlined />,
+      label: t('nav.espacos'),
+    },
+    {
+      key: 'agentes',
+      icon: <UserOutlined />,
+      label: t('nav.agentes'),
+    },
+    {
+      key: 'projetos',
+      icon: <UserOutlined />,
+      label: t('nav.projetos'),
+    },
+    {
+      key: 'cursos',
+      icon: <UserOutlined />,
+      label: t('nav.cursos'),
     },
   ];
 
   const userMenuItems = [
     {
-      key: 'home',
-      icon: <UserOutlined />,
-      label: 'DASHBOARD',
+      key: 'dashboard',
+      icon: <DashboardOutlined />,
+      label: t('nav.dashboard'),
     },
     {
-      key: 'cadastro',
+      key: 'CadastroPF',
       icon: <UserOutlined />,
-      label: 'MEU CADASTRO',
+      label: t('nav.cadastroPF'),
     },
     {
       key: 'configuracoes',
       icon: <SettingOutlined />,
-      label: 'CONFIGURAÇÕES',
-    },
-  ];
-
-  const adminMenuItems = [
-    {
-      key: 'admin-dashboard',
-      icon: <UserOutlined />,
-      label: 'ADMIN DASHBOARD',
-    },
-    {
-      key: 'cadastros',
-      icon: <UserOutlined />,
-      label: 'CADASTROS',
-    },
-    {
-      key: 'configuracoes',
-      icon: <SettingOutlined />,
-      label: 'CONFIGURAÇÕES',
+      label: 'Configurações',
     },
   ];
 
   const getMenuItems = () => {
-    if (!user) return publicMenuItems;
-    return user.profile === 'admin' ? adminMenuItems : userMenuItems;
+    if (loading) return publicMenuItems;
+
+    if (user) {
+      return user.profile === 'admin' ? [
+        {
+          key: 'dashboard',
+          icon: <DashboardOutlined />,
+          label: 'DASHBOARD',
+        },
+      ] : userMenuItems;
+    }
+    return publicMenuItems;
   };
 
   const userMenu = (
@@ -110,7 +138,7 @@ const Navbar: React.FC<NavbarProps> = ({
       </Menu.Item>
       <Menu.Divider />
       <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
-        LOGOUT
+        {t('nav.logout')}
       </Menu.Item>
     </Menu>
   );
@@ -149,7 +177,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   <Link to="/login">LOGIN</Link>
                 </Button>
                 <Button type="primary" icon={<UserAddOutlined />} block>
-                  <Link to="/cadastro">CADASTRAR</Link>
+                  <Link to="/Cadastros">CADASTRAR</Link>
                 </Button>
               </div>
             </div>
@@ -157,7 +185,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
           {user && (
             <div style={{ padding: '16px 0', borderTop: '1px solid #f0f0f0' }}>
-              <Dropdown overlay={userMenu} trigger={['click']}>
+              <Dropdown overlay={userMenu} trigger={["click"]}>
                 <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: '8px' }}>
                   <Avatar icon={<UserOutlined />} style={{ marginRight: 8 }} />
                   <span>{user.name.toUpperCase()}</span>
@@ -172,7 +200,7 @@ const Navbar: React.FC<NavbarProps> = ({
   }
 
   return (
-    <motion.div
+     <motion.div
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -182,10 +210,21 @@ const Navbar: React.FC<NavbarProps> = ({
         padding: '0 24px'
       }}
     >
-      <Row align="middle" style={{ height: '64px' }}>
-        {/* Logo e Título */}
-        <Col xs={24} sm={8} md={6} lg={4}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+      <Row align="middle" style={{ height: '160px' }}>
+        {/* Controles e Logo */}
+         <Col xs={24} sm={8} md={6} lg={4}>
+           <div style={{ display: 'flex', alignItems: 'center' }}>
+            {/* Botões antes da logomarca: Sidebar (toggle) e Drawer */}
+            {user?.profile === 'admin' && (
+              <Button
+                type="text"
+                icon={sidebarCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                onClick={onToggleSidebar}
+                aria-label="Alternar sidebar"
+                style={{ marginRight: 8 }}
+              />
+            )}
+            <AppDrawer trigger={<Button type="text" icon={<DownOutlined />} aria-label="Abrir menu" />} />
             {/* Botão Voltar (quando necessário) */}
             {showBackButton && (
               <Link to={backButtonPath} style={{ marginRight: '16px' }}>
@@ -203,79 +242,28 @@ const Navbar: React.FC<NavbarProps> = ({
               </Link>
             )}
 
-            {/* Botões de controle lado a lado */}
-            <div style={{ display: 'flex', gap: '8px', marginRight: '16px' }}>
-              {onMobileMenuToggle && (
-                <Button
-                  type="text"
-                  icon={<DownOutlined />}
-                  onClick={onMobileMenuToggle}
-                  style={{
-                    fontSize: '16px',
-                    border: '1px solid #d9d9d9',
-                    borderRadius: '6px'
-                  }}
-                />
-              )}
-
-              {onSidebarToggle && onSidebarToggle.toString() !== '() => {}' && (
-                <Button
-                  type="text"
-                  icon={sidebarCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                  onClick={onSidebarToggle}
-                  style={{
-                    fontSize: '16px',
-                    border: '1px solid #d9d9d9',
-                    borderRadius: '6px'
-                  }}
-                />
-              )}
-            </div>
-
             <Link to="/home" style={{ textDecoration: 'none' }}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  background: 'linear-gradient(135deg, #1e3c72, #2a5298)',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: '12px',
-                  fontSize: '18px',
-                  fontWeight: 'bold',
-                  color: 'white',
-                  cursor: 'pointer'
-                }}>
-                  SEC
-                </div>
-                <div style={{ cursor: 'pointer' }}>
-                  <div style={{
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    color: '#1e3c72',
-                    lineHeight: 1.2
-                  }}>
-                    CADASTRO CULTURAL
-                  </div>
-                  <div style={{
-                    fontSize: '11px',
-                    color: '#666',
-                    lineHeight: 1
-                  }}>
-                    GOVERNO DO AMAZONAS
-                  </div>
-                </div>
+                <img
+                  src={logoImage}
+                  alt="SEC"
+                  style={{
+                    width: 'auto',
+                    height: '108px',
+                    marginRight: '0.5rem',
+                    objectFit: 'contain',
+                    objectPosition: 'center',
+                    display: 'block',
+                    flexShrink: 0
+                  }}
+                />
               </div>
             </Link>
           </div>
         </Col>
 
-        {/* Área de Autenticação - Layout original */}
         <Col xs={24} sm={16} md={18} lg={20}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-            {/* Menu de Navegação */}
             <Menu
               mode="horizontal"
               items={getMenuItems().map(item => ({
@@ -291,9 +279,20 @@ const Navbar: React.FC<NavbarProps> = ({
               theme="light"
             />
 
-            {/* Área de Autenticação */}
+            <Dropdown
+              overlay={
+                <Menu>
+                  <Menu.Item key="lang-pt" onClick={() => setLocale('pt')}>{t('common.language.pt')}</Menu.Item>
+                  <Menu.Item key="lang-en" onClick={() => setLocale('en')}>{t('common.language.en')}</Menu.Item>
+                </Menu>
+              }
+              trigger={["click"]}
+            >
+              <Button type="text" style={{ marginRight: '12px' }}>{t('nav.language')}: {locale.toUpperCase()}</Button>
+            </Dropdown>
+
             {user ? (
-              <Dropdown overlay={userMenu} trigger={['click']}>
+              <Dropdown overlay={userMenu} trigger={["click"]}>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -316,7 +315,10 @@ const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <div style={{ display: 'flex', gap: '8px' }}>
                 <Button type="text" icon={<LoginOutlined />}>
-                  <Link to="/login">LOGIN</Link>
+                  <Link to="/login">{t('nav.login')}</Link>
+                </Button>
+                <Button type="primary" icon={<UserAddOutlined />}>
+                  <Link to="/Cadastros">{t('nav.register')}</Link>
                 </Button>
               </div>
             )}

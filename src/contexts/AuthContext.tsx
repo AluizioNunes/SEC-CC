@@ -94,6 +94,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('sec-user');
+    // Não usar navigate aqui - será tratado pelo componente que chamar logout
   };
 
   return (

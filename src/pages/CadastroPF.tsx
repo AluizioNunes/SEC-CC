@@ -307,12 +307,11 @@ const CadastroPF: React.FC = () => {
   ];
 
   return (
-    <div style={{ padding: '24px', background: '#f0f2f5', minHeight: '100vh' }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
         {/* Cabeçalho */}
         <div style={{ marginBottom: '24px' }}>
           <Title level={2} style={{ margin: 0, color: '#1e3c72' }}>
@@ -470,7 +469,6 @@ const CadastroPF: React.FC = () => {
           onClose={handleModalClose}
         />
       </motion.div>
-    </div>
   );
 };
 

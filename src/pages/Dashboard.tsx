@@ -205,8 +205,7 @@ const Dashboard: React.FC = () => {
       animate="visible"
       style={{
         padding: '24px',
-        background: '#f0f2f5',
-        minHeight: 'calc(100vh - 140px)'
+        minHeight: '100vh'
       }}
     >
       {/* Cabeçalho do Dashboard */}

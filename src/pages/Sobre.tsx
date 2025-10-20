@@ -19,10 +19,7 @@ const Sobre: React.FC = () => {
       transition={{ duration: 0.5 }}
       style={{
         padding: '24px',
-        maxWidth: '100%',
-        margin: '0 auto',
-        background: '#fff',
-        minHeight: 'calc(100vh - 140px)'
+        minHeight: '100vh'
       }}
     >
       <Card style={{ maxWidth: '1000px', margin: '0 auto' }}>

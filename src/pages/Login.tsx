@@ -17,6 +17,7 @@ import {
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../i18n/I18nContext';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -33,6 +34,7 @@ const Login: React.FC = () => {
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const handleDeveloperLogin = async () => {
     setLoading(true);
@@ -78,7 +80,7 @@ const Login: React.FC = () => {
     'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&h=800&fit=crop&crop=center',
   ];
 
-  const currentImage = culturalImages[Math.floor(Math.random() * culturalImages.length)];
+  const currentImage = React.useMemo(() => culturalImages[Math.floor(Math.random() * culturalImages.length)], []);
 
   return (
     <div style={{
@@ -102,7 +104,7 @@ const Login: React.FC = () => {
         <Row style={{ height: '100%', width: '100%' }}>
           {/* Lado Esquerdo - Imagem Cultural (65%) */}
           <Col xs={0} lg={15} xl={16} style={{
-            background: `url(${currentImage})`,
+            backgroundImage: `url(${currentImage})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             display: 'flex',
@@ -136,7 +138,8 @@ const Login: React.FC = () => {
                   textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
                   fontSize: '16px'
                 }}>
-                  Cultura Amazonense
+-                 Cultura Amazonense
++                 {t('hero.title')}
                 </Title>
                 <Paragraph style={{
                   color: 'rgba(255,255,255,0.9)',
@@ -145,7 +148,8 @@ const Login: React.FC = () => {
                   maxWidth: '200px',
                   margin: '0 auto'
                 }}>
-                  Conecte-se ao Sistema Estadual de Cultura
+-                 Conecte-se ao Sistema Estadual de Cultura
++                 {t('hero.subtitle')}
                 </Paragraph>
               </motion.div>
             </div>
@@ -372,7 +376,7 @@ const Login: React.FC = () => {
                 <Paragraph style={{ color: '#666', marginBottom: '12px', fontSize: '13px' }}>
                   Ainda não tem cadastro?
                 </Paragraph>
-                <Link to="/cadastro">
+                <Link to="/Cadastros">
                   <Button
                     type="default"
                     size="large"
