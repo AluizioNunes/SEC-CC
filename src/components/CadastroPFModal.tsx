@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal,
   Form,
@@ -15,7 +15,8 @@ import {
   Tabs,
   message,
   Checkbox,
-  Radio
+  Radio,
+  Steps
 } from 'antd';
 import {
   SaveOutlined,
@@ -31,6 +32,7 @@ import {
 import type { PessoaFisica } from '../contexts/PessoaFisicaContext';
 import { usePessoaFisica } from '../contexts/PessoaFisicaContext';
 import moment from 'moment';
+import SECGovLogo from '../Images/SEC_GOV-LogoOficial.png';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -46,6 +48,68 @@ interface CadastroPFModalProps {
 const CadastroPFModal: React.FC<CadastroPFModalProps> = ({ visible, pessoa, onClose }) => {
   const [form] = Form.useForm();
   const { criarPessoaFisica, atualizarPessoaFisica, loading } = usePessoaFisica();
+  const [activeTabKey, setActiveTabKey] = useState<string>('dados-pessoais');
+
+  // Exceções para não converter em MAIÚSCULO
+  const uppercaseExceptions = new Set([
+    'email',
+    'instagram',
+    'facebook',
+    'twitter',
+    'linkedin',
+    'youtube',
+    'site',
+    'website',
+    'portfolio',
+    'portifolio',
+    'redeSocial',
+    'redesSociais'
+  ]);
+
+  const isExceptionKey = (key: string) => uppercaseExceptions.has(key.toLowerCase());
+
+  const toUpperDeep = (obj: any, path: string[] = []) => {
+    if (!obj || typeof obj !== 'object') return obj;
+    const result: any = Array.isArray(obj) ? [] : {};
+    for (const key of Object.keys(obj)) {
+      const val = (obj as any)[key];
+      const lastKey = key;
+      if (typeof val === 'string' && !isExceptionKey(lastKey)) {
+        result[key] = val.toUpperCase();
+      } else if (val && typeof val === 'object' && !moment.isMoment(val)) {
+        result[key] = toUpperDeep(val, [...path, key]);
+      } else {
+        result[key] = val;
+      }
+    }
+    return result;
+  };
+
+  const hasDiff = (a: any, b: any): boolean => {
+    if (a === b) return false;
+    if (!a || !b) return false;
+    if (typeof a !== 'object' || typeof b !== 'object') return false;
+    for (const key of Object.keys(a)) {
+      const v1 = a[key];
+      const v2 = b[key];
+      if (typeof v1 === 'string' && v1 !== v2) return true;
+      if (v1 && typeof v1 === 'object') {
+        if (hasDiff(v1, v2)) return true;
+      }
+    }
+    return false;
+  };
+
+  const stepItems = [
+    { key: 'dados-pessoais', title: 'Dados Pessoais', icon: <UserOutlined /> },
+    { key: 'contato', title: 'Contato', icon: <MailOutlined /> },
+    { key: 'endereco', title: 'Endereço', icon: <EnvironmentOutlined /> },
+    { key: 'naturalidade', title: 'Naturalidade', icon: <IdcardOutlined /> },
+    { key: 'documentos', title: 'Documentos', icon: <IdcardOutlined /> },
+    { key: 'informacoes-culturais', title: 'Informações Culturais', icon: <BookOutlined /> },
+    { key: 'situacao', title: 'Situação', icon: <TeamOutlined /> },
+  ];
+  const currentStep = stepItems.findIndex((s) => s.key === activeTabKey);
 
   // Estados brasileiros
   const estadosBrasileiros = [
@@ -197,14 +261,22 @@ const CadastroPFModal: React.FC<CadastroPFModalProps> = ({ visible, pessoa, onCl
   return (
     <Modal
       title={
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <IdcardOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-          {pessoa ? 'Editar Pessoa Física' : 'Cadastrar Pessoa Física'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <img src={SECGovLogo} alt="Logo SEC" style={{ height: 40 }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <IdcardOutlined style={{ color: '#1890ff' }} />
+            {pessoa ? 'Editar Pessoa Física' : 'Cadastrar Pessoa Física'}
+          </div>
         </div>
       }
       visible={visible}
       onCancel={onClose}
-      width={900}
+      centered
+      width={'75%'}
+      styles={{
+        content: { height: '84vh' },
+        body: { minHeight: '80vh', maxHeight: '80vh', overflowY: 'auto' }
+      }}
       footer={[
         <Button key="cancel" onClick={onClose} icon={<CloseOutlined />}>
           Cancelar
@@ -230,8 +302,23 @@ const CadastroPFModal: React.FC<CadastroPFModalProps> = ({ visible, pessoa, onCl
           endereco: { pais: 'Brasil' },
           naturalidade: { pais: 'Brasil' }
         }}
+        onValuesChange={(changed) => {
+          const converted = toUpperDeep(changed);
+          if (hasDiff(changed, converted)) {
+            form.setFieldsValue(converted);
+          }
+        }}
       >
-        <Tabs defaultActiveKey="dados-pessoais" type="card">
+        <div style={{ marginBottom: 16 }}>
+          <Steps
+            size="small"
+            current={currentStep}
+            onChange={(index) => setActiveTabKey(stepItems[index].key)}
+            items={stepItems.map((s) => ({ title: s.title, icon: s.icon }))}
+          />
+        </div>
+
+        <Tabs activeKey={activeTabKey} onChange={setActiveTabKey} type="card">
           {/* Dados Pessoais */}
           <TabPane tab="Dados Pessoais" key="dados-pessoais">
             <Row gutter={16}>

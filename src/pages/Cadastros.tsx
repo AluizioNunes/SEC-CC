@@ -31,12 +31,16 @@ import {
 } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import CadastroPFModal from '../components/CadastroPFModal';
 
 const { Title, Paragraph, Text } = Typography;
 const { Panel } = Collapse;
 
 const Cadastros: React.FC = () => {
   const [activeCard, setActiveCard] = useState<string | null>(null);
+  const [pfModalOpen, setPfModalOpen] = useState<boolean>(false);
+  const openPFModal = () => setPfModalOpen(true);
+  const closePFModal = () => setPfModalOpen(false);
 
   const beneficiosPessoaFisica = [
     'Acesso a editais e chamadas públicas de cultura',
@@ -217,24 +221,24 @@ const Cadastros: React.FC = () => {
                 </div>
               </div>
 
-              <Link to="/CadastroPF">
-                <Button
-                  type="primary"
-                  size="large"
-                  block
-                  icon={<ArrowRightOutlined />}
-                  style={{
-                    background: 'linear-gradient(135deg, #1890ff, #40a9ff)',
-                    border: 'none',
-                    height: '52px',
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    borderRadius: '8px'
-                  }}
-                >
-                  Cadastrar como Pessoa Física
-                </Button>
-              </Link>
+              <Button
+                type="primary"
+                size="large"
+                block
+                icon={<ArrowRightOutlined />}
+                onClick={openPFModal}
+                style={{
+                  background: 'linear-gradient(135deg, #1890ff, #40a9ff)',
+                  border: 'none',
+                  height: '52px',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  borderRadius: '8px'
+                }}
+              >
+                Cadastrar como Pessoa Física
+              </Button>
+              
             </Card>
           </motion.div>
         </Col>
@@ -378,8 +382,9 @@ const Cadastros: React.FC = () => {
           </motion.div>
         </Col>
       </Row>
+      <CadastroPFModal visible={pfModalOpen} pessoa={null} onClose={closePFModal} />
     </motion.div>
   );
-};
+}
 
 export default Cadastros;
