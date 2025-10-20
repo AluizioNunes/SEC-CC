@@ -18,6 +18,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../i18n/I18nContext';
+import SECGovLogo from '../Images/SEC_GOV-LogoOficial.png';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -181,12 +182,14 @@ const Login: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              {/* Cabeçalho */}
+              {/* Cabeçalho com logo */}
               <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                <Title level={4} style={{ margin: 0, color: '#1890ff', fontSize: '18px' }}>
-                  Bem-vindo ao SEC
-                </Title>
-                <Paragraph style={{ color: '#666', marginTop: '4px', fontSize: '13px' }}>
+                <img
+                  src={SECGovLogo}
+                  alt="Logo SEC"
+                  style={{ width: 'auto', height: '108px', objectFit: 'contain' }}
+                />
+                <Paragraph style={{ color: '#666', marginTop: '8px', fontSize: '13px' }}>
                   Entre na sua conta para continuar
                 </Paragraph>
               </div>
@@ -411,6 +414,17 @@ const Login: React.FC = () => {
                     suporte@cadastrocultural.am.gov.br
                   </a>
                 </Paragraph>
+              </div>
+
+              {/* Referência Legal e LGPD */}
+              <div style={{ textAlign: 'center', marginTop: '12px' }}>
+                <Paragraph style={{ color: '#888', fontSize: '11px', marginBottom: '4px' }}>
+                  Plataforma construída com base na Lei Estadual nº 6.306, de 19 de julho de 2023 — Cadastro Estadual,
+                  respeitando as melhores práticas da LGPD.
+                </Paragraph>
+                <Text type="secondary" style={{ fontSize: '10px' }}>
+                  Referência: d:\PROJETOS\SEC\src\databases\LEI N.º 6.306, DE 19 DE JULHO DE 2023 - CADASTRO ESTADUAL.pdf
+                </Text>
               </div>
             </motion.div>
           </Col>

@@ -27,7 +27,7 @@ const OportunidadeDetalhe: React.FC = () => {
           <Title level={2} style={{ marginBottom: 0 }}>{opp.title}</Title>
           <Space wrap>
             <Tag color="purple">{opp.category}</Tag>
-            <Tag color={opp.status === 'aberto' ? 'green' : opp.status === 'em_breve' ? 'geekblue' : 'red'}>
+            <Tag color={opp.status === 'aberto' ? 'green' : opp.status === 'inscricoes' ? 'geekblue' : opp.status === 'breve' ? 'orange' : 'default'}>
               {opp.status}
             </Tag>
             {opp.tags.map(t => <Tag key={t}>{t}</Tag>)}
@@ -40,13 +40,13 @@ const OportunidadeDetalhe: React.FC = () => {
           <Paragraph>{opp.description}</Paragraph>
 
           <Title level={4}>Requisitos</Title>
-          <List dataSource={opp.requirements} renderItem={(req) => (<List.Item><Text>{req}</Text></List.Item>)} />
+          <List dataSource={opp.requirements} renderItem={(req) => (<List.Item key={req}><Text>{req}</Text></List.Item>)} />
 
           <Title level={4}>Cronograma</Title>
-          <List dataSource={opp.timeline} renderItem={(tl) => (<List.Item><Text>{tl.date}: {tl.label}</Text></List.Item>)} />
+          <List dataSource={opp.timeline} renderItem={(tl) => (<List.Item key={`${tl.date}-${tl.label}`}><Text>{tl.date}: {tl.label}</Text></List.Item>)} />
 
           <Title level={4}>Documentos</Title>
-          <List dataSource={opp.documents} renderItem={(doc) => (<List.Item><a href={doc.url} target="_blank" rel="noreferrer">{doc.name}</a></List.Item>)} />
+          <List dataSource={opp.documents} renderItem={(doc) => (<List.Item key={doc.name}><a href={doc.url} target="_blank" rel="noreferrer">{doc.name}</a></List.Item>)} />
 
           <Space>
             <Button type="primary" size="large">Inscrever-se</Button>

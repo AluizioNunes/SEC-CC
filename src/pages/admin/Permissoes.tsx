@@ -1,13 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, Col, Row, Select, Table, Checkbox, Button, message, Alert } from 'antd';
-import { useAdmin, type ScreenKey, type ActionsPermission } from '../../contexts/AdminContext';
+import { useAdmin } from '../../contexts/AdminContext';
+import type { Profile } from '../../contexts/AdminContext';
 import { useAuth } from '../../contexts/AuthContext';
 import LogsModal from '../../components/modals/LogsModal';
 
+// Tipos locais para evitar erros de importação
+type ScreenKey = 'usuarios' | 'perfil' | 'permissoes';
+interface ActionsPermission { view: boolean; create: boolean; edit: boolean; delete: boolean; }
+
 const Permissoes: React.FC = () => {
-  const { profiles, screensList, getPermissionsForProfile, setPermissionsForProfile } = useAdmin();
+  const { profiles, getPermissionsForProfile, setPermissionsForProfile } = useAdmin();
+  // Lista estática de telas suportadas pelo AdminContext atual
+  const screensList: ScreenKey[] = ['usuarios', 'perfil', 'permissoes'];
   const { user } = useAuth();
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(profiles[0]?.id || null);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>((profiles as Profile[])[0]?.id || null);
   const [matrix, setMatrix] = useState<Record<ScreenKey, ActionsPermission>>({} as any);
   const [logsOpen, setLogsOpen] = useState(false);
   const currentProfileId = user?.profile === 'admin' ? 'p-admin' : 'p-usuario';
@@ -55,18 +62,14 @@ const Permissoes: React.FC = () => {
     setMatrix(prev => ({ ...prev, [screen]: { ...prev[screen], [action]: checked } }));
   };
 
-  const labelForScreen = (k: ScreenKey) => {
+  function labelForScreen(k: ScreenKey): string {
     const map: Record<ScreenKey, string> = {
       usuarios: 'Usuários',
       perfil: 'Perfil',
       permissoes: 'Permissões',
-      cadastros: 'Cadastros',
-      financeiro: 'Financeiro',
-      juridico: 'Jurídico',
-      monitoramento: 'Monitoramento',
     };
     return map[k];
-  };
+  }
 
   const save = () => {
     if (!selectedProfileId) return;
@@ -88,7 +91,7 @@ const Permissoes: React.FC = () => {
               style={{ width: 320 }}
               placeholder="Selecione o perfil"
               value={selectedProfileId || undefined}
-              options={profiles.map(p => ({ value: p.id, label: p.name }))}
+              options={(profiles as Profile[]).map(p => ({ value: p.id, label: p.name }))}
               onChange={(v) => setSelectedProfileId(v)}
             />
             <div style={{ marginTop: 16 }}>
