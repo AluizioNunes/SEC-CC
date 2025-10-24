@@ -16,6 +16,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
+
           antd: ['antd', '@ant-design/icons'],
           motion: ['framer-motion'],
           charts: ['echarts', 'echarts-for-react'],

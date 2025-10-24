@@ -4,6 +4,8 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import Sidebar from '../components/Sidebar';
 import { useAuth } from '../contexts/AuthContext';
+import { motion } from 'framer-motion';
+import { useLocation } from 'react-router-dom';
 
 const { Content } = AntLayout;
 
@@ -14,11 +16,11 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(true);
+  const location = useLocation();
   return (
     <AntLayout style={{ minHeight: '100vh' }}>
       {/* Navbar */}
       <Navbar sidebarCollapsed={sidebarCollapsed} onToggleSidebar={() => setSidebarCollapsed(prev => !prev)} />
-
 
       <AntLayout>
         {/* Sidebar Administrativo (apenas para admin) */}
@@ -36,7 +38,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             left: 0,
           }}
         >
-          <div
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
             className="content-wrapper"
             style={{
               width: '100%',
@@ -46,7 +52,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             }}
           >
             {children}
-          </div>
+          </motion.div>
         </Content>
       </AntLayout>
 

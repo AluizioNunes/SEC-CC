@@ -1,24 +1,19 @@
 import React, { useState } from 'react';
-import { Drawer, Menu, Divider, Button, Space, Typography } from 'antd';
-import { Link, useNavigate } from 'react-router-dom';
+import { Drawer, Button, Space } from 'antd';
+import { useNavigate } from 'react-router-dom';
 import {
-  MenuOutlined,
   AppstoreOutlined,
   CalendarOutlined,
   CompassOutlined,
   TeamOutlined,
   ProjectOutlined,
   ReadOutlined,
-  DashboardOutlined,
   LoginOutlined,
-  SettingOutlined,
   GlobalOutlined,
   DownOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../i18n/I18nContext';
-
-const { Text } = Typography;
 
 interface AppDrawerProps {
   trigger?: React.ReactNode;
@@ -30,11 +25,26 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ trigger }) => {
   const navigate = useNavigate();
   const { t, locale, setLocale } = useI18n();
 
+  const go = (path: string) => {
+    navigate(path);
+    setOpen(false);
+  };
+
   const onLogout = () => {
     logout();
     navigate('/login');
     setOpen(false);
   };
+
+  const options = [
+    { key: 'home', icon: <AppstoreOutlined style={{ fontSize: 22 }} />, label: t('nav.home'), path: '/home' },
+    { key: 'oportunidades', icon: <ProjectOutlined style={{ fontSize: 22 }} />, label: t('nav.oportunidades'), path: '/oportunidades' },
+    { key: 'eventos', icon: <CalendarOutlined style={{ fontSize: 22 }} />, label: t('nav.eventos'), path: '/eventos' },
+    { key: 'espacos', icon: <CompassOutlined style={{ fontSize: 22 }} />, label: t('nav.espacos'), path: '/espacos' },
+    { key: 'agentes', icon: <TeamOutlined style={{ fontSize: 22 }} />, label: t('nav.agentes'), path: '/agentes' },
+    { key: 'projetos', icon: <ProjectOutlined style={{ fontSize: 22 }} />, label: t('nav.projetos'), path: '/projetos' },
+    { key: 'cursos', icon: <ReadOutlined style={{ fontSize: 22 }} />, label: t('nav.cursos'), path: '/cursos' },
+  ];
 
   return (
     <>
@@ -49,31 +59,36 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ trigger }) => {
       <Drawer
         title={null}
         placement="top"
-        height={360}
+        height={280}
         onClose={() => setOpen(false)}
         open={open}
+        styles={{ body: { padding: 12 } }}
       >
-        <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Menu
-            mode="horizontal"
-            items={[
-              { key: 'home', icon: <AppstoreOutlined />, label: <Link to="/home" onClick={() => setOpen(false)}>{t('nav.home')}</Link> },
-              { key: 'oportunidades', icon: <ProjectOutlined />, label: <Link to="/oportunidades" onClick={() => setOpen(false)}>{t('nav.oportunidades')}</Link> },
-              { key: 'eventos', icon: <CalendarOutlined />, label: <Link to="/eventos" onClick={() => setOpen(false)}>{t('nav.eventos')}</Link> },
-              { key: 'espacos', icon: <CompassOutlined />, label: <Link to="/espacos" onClick={() => setOpen(false)}>{t('nav.espacos')}</Link> },
-              { key: 'agentes', icon: <TeamOutlined />, label: <Link to="/agentes" onClick={() => setOpen(false)}>{t('nav.agentes')}</Link> },
-              { key: 'projetos', icon: <ProjectOutlined />, label: <Link to="/projetos" onClick={() => setOpen(false)}>{t('nav.projetos')}</Link> },
-              { key: 'cursos', icon: <ReadOutlined />, label: <Link to="/cursos" onClick={() => setOpen(false)}>{t('nav.cursos')}</Link> },
-            ]}
-            style={{ border: 'none' }}
-          />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button type={locale === 'pt' ? 'primary' : 'default'} icon={<GlobalOutlined />} onClick={() => setLocale('pt')}>PT</Button>
-            <Button type={locale === 'en' ? 'primary' : 'default'} icon={<GlobalOutlined />} onClick={() => setLocale('en')}>EN</Button>
-            {user && (
-              <Button danger icon={<LoginOutlined />} onClick={onLogout}>Sair</Button>
-            )}
+        <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Opções em linha com rolagem horizontal quando necessário */}
+          <div style={{ flex: 1, overflowX: 'auto', whiteSpace: 'nowrap', padding: '6px 4px' }}>
+            {options.map(opt => (
+              <Button
+                key={opt.key}
+                type="text"
+                size="large"
+                icon={opt.icon}
+                onClick={() => go(opt.path)}
+                style={{ marginRight: 8 }}
+              >
+                {opt.label}
+              </Button>
+            ))}
           </div>
+
+          {/* Ações à direita: idioma e sair */}
+          <Space align="center">
+            <Button type={locale === 'pt' ? 'primary' : 'default'} icon={<GlobalOutlined style={{ fontSize: 18 }} />} onClick={() => setLocale('pt')}>PT</Button>
+            <Button type={locale === 'en' ? 'primary' : 'default'} icon={<GlobalOutlined style={{ fontSize: 18 }} />} onClick={() => setLocale('en')}>EN</Button>
+            {user && (
+              <Button danger icon={<LoginOutlined style={{ fontSize: 18 }} />} onClick={onLogout}>Sair</Button>
+            )}
+          </Space>
         </div>
       </Drawer>
     </>

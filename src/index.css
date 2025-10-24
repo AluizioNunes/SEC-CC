@@ -26,10 +26,22 @@ html, body, #root {
   background: #fff !important;
   padding: 0 !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 1000 !important;
-  height: 64px !important;
+  /* Removido sticky global para evitar sobreposição em headers internos */
+  position: relative !important;
+  top: auto !important;
+  z-index: auto !important;
+  height: auto !important;
+}
+
+/* Escopo: impedir sticky no header interno do LinkedLayout */
+.linked-layout .ant-layout-header {
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  position: relative !important;
+  top: auto !important;
+  z-index: auto !important;
+  height: auto !important;
 }
 
 /* Conteúdo Principal - Ocupa toda a largura disponível */
