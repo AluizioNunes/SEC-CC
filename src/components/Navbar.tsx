@@ -138,7 +138,7 @@ const Navbar: React.FC<NavbarProps> = ({
       </Menu.Item>
       <Menu.Divider />
       <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout}>
-        {t('nav.logout')}
+        {t('nav.logout').toUpperCase()}
       </Menu.Item>
     </Menu>
   );
@@ -161,7 +161,7 @@ const Navbar: React.FC<NavbarProps> = ({
             items={getMenuItems().map(item => ({
               key: item.key,
               icon: item.icon,
-              label: <Link to={`/${item.key}`} style={{ textDecoration: 'none' }}>{item.label}</Link>,
+              label: <Link to={`/${item.key}`} style={{ textDecoration: 'none' }}>{String(item.label).toUpperCase()}</Link>,
             }))}
             style={{
               border: 'none',
@@ -269,7 +269,7 @@ const Navbar: React.FC<NavbarProps> = ({
               items={getMenuItems().map(item => ({
                 key: item.key,
                 icon: item.icon,
-                label: <Link to={`/${item.key}`}>{item.label}</Link>,
+                label: <Link to={`/${item.key}`}>{String(item.label).toUpperCase()}</Link>,
               }))}
               style={{
                 border: 'none',

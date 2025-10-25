@@ -48,6 +48,8 @@ services:
       - HOST=fastapi
       - PORT=8000
       - REDIS_URL=redis://:redispassword2024@redis:6379/0
+      - DATABASE_URL=postgresql+asyncpg://sec:secpass2024@postgres:5432/secdb
+      - MONGODB_URL=mongodb://mongodb:27017/secmongo
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
       interval: 15s
@@ -60,7 +62,7 @@ services:
     image: redis:latest
     container_name: CC-REDIS
     ports:
-      - "6379:6379"
+      - "6380:6379"
     command: redis-server --requirepass redispassword2024
     restart: unless-stopped
     healthcheck:
@@ -79,8 +81,9 @@ services:
       POSTGRES_DB: secdb
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./Docker/postgres/init.sql:/docker-entrypoint-initdb.d/001_init.sql
     ports:
-      - "5432:5432"
+      - "5434:5432"
     networks:
       - sec_net
     healthcheck:
@@ -100,7 +103,7 @@ services:
     volumes:
       - mongo_data:/data/db
     ports:
-      - "27017:27017"
+      - "27018:27017"
     networks:
       - sec_net
     healthcheck:

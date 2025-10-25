@@ -31,7 +31,8 @@ import {
 } from '@ant-design/icons';
 import type { PessoaFisica } from '../contexts/PessoaFisicaContext';
 import { usePessoaFisica } from '../contexts/PessoaFisicaContext';
-import moment from 'moment';
+import dayjs from 'dayjs';
+import { format } from 'date-fns';
 import SECGovLogo from '../Images/SEC_GOV-LogoOficial.png';
 
 const { Title, Text } = Typography;
@@ -76,7 +77,7 @@ const CadastroPFModal: React.FC<CadastroPFModalProps> = ({ visible, pessoa, onCl
       const lastKey = key;
       if (typeof val === 'string' && !isExceptionKey(lastKey)) {
         result[key] = val.toUpperCase();
-      } else if (val && typeof val === 'object' && !moment.isMoment(val)) {
+      } else if (val && typeof val === 'object' && !dayjs.isDayjs(val)) {
         result[key] = toUpperDeep(val, [...path, key]);
       } else {
         result[key] = val;
@@ -152,10 +153,10 @@ const CadastroPFModal: React.FC<CadastroPFModalProps> = ({ visible, pessoa, onCl
     if (pessoa) {
       form.setFieldsValue({
         ...pessoa,
-        dataNascimento: pessoa.dataNascimento ? moment(pessoa.dataNascimento) : null,
+        dataNascimento: pessoa.dataNascimento ? dayjs(pessoa.dataNascimento) : null,
         documentos: {
           ...pessoa.documentos,
-          dataExpedicao: pessoa.documentos?.dataExpedicao ? moment(pessoa.documentos.dataExpedicao) : null
+          dataExpedicao: pessoa.documentos?.dataExpedicao ? dayjs(pessoa.documentos.dataExpedicao) : null
         }
       });
     } else {
@@ -171,7 +172,7 @@ const CadastroPFModal: React.FC<CadastroPFModalProps> = ({ visible, pessoa, onCl
       const pessoaData = {
         cpf: values.cpf,
         nome: values.nome,
-        dataNascimento: values.dataNascimento.format('YYYY-MM-DD'),
+        dataNascimento: values.dataNascimento ? format(values.dataNascimento.toDate(), 'yyyy-MM-dd') : undefined,
         email: values.email,
         telefone: values.telefone,
         celular: values.celular,
@@ -196,7 +197,7 @@ const CadastroPFModal: React.FC<CadastroPFModalProps> = ({ visible, pessoa, onCl
         documentos: {
           rg: values.documentos.rg,
           orgaoExpedidor: values.documentos.orgaoExpedidor,
-          dataExpedicao: values.documentos.dataExpedicao.format('YYYY-MM-DD'),
+          dataExpedicao: values.documentos.dataExpedicao ? format(values.documentos.dataExpedicao.toDate(), 'yyyy-MM-dd') : undefined,
           tituloEleitor: values.documentos.tituloEleitor,
           carteiraTrabalho: values.documentos.carteiraTrabalho,
           certificadoReservista: values.documentos.certificadoReservista

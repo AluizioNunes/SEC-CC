@@ -1,10 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Database URLs
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost/sec_cadastro")
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://sec:secpass2024@localhost:5434/secdb")
+MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27018/secmongo")
 
 # SQLAlchemy setup for PostgreSQL
 engine = create_async_engine(DATABASE_URL, echo=True)

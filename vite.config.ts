@@ -20,7 +20,7 @@ export default defineConfig({
           antd: ['antd', '@ant-design/icons'],
           motion: ['framer-motion'],
           charts: ['echarts', 'echarts-for-react'],
-          utils: ['axios', 'date-fns', 'moment'],
+          utils: ['axios', 'date-fns', 'dayjs'],
         },
       },
     },
@@ -37,7 +37,7 @@ export default defineConfig({
       'echarts-for-react',
       'axios',
       'date-fns',
-      'moment',
+      'dayjs',
     ],
   },
 });

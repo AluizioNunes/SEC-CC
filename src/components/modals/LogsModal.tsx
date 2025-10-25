@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, Table, Tag } from 'antd';
 import { useAdmin, type AdminLog } from '../../contexts/AdminContext';
+import NavbarCompact from '../NavbarCompact';
 
 interface LogsModalProps {
   open: boolean;
@@ -34,7 +35,8 @@ const LogsModal: React.FC<LogsModalProps> = ({ open, onClose, entityFilter }) =>
   ];
 
   return (
-    <Modal open={open} onCancel={onClose} onOk={onClose} title="Auditoria" width={900} destroyOnClose>
+    <Modal open={open} onCancel={onClose} onOk={onClose} title={<NavbarCompact variant="modalHeader" />} width={900} destroyOnClose>
+      {/* Removido header dentro do corpo, substituído por title custom */}
       <Table columns={columns as any} dataSource={filtered.map(l => ({ ...l, key: l.id }))} pagination={{ pageSize: 8 }} />
     </Modal>
   );

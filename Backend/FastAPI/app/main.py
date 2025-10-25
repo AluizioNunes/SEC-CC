@@ -2,14 +2,21 @@
 FastAPI Application with Ultra-Advanced Redis Integration
 Revolutionary application with complete Redis ecosystem for enterprise-grade applications
 """
-from typing import Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, Request, Depends, status
+from __future__ import annotations
+from typing import Dict, Any, Optional, List
+from fastapi import FastAPI, HTTPException, Request, Depends, status, APIRouter
+from pydantic import BaseModel
+from datetime import datetime, timezone
+from .db_asyncpg import get_pool, init_pool
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import time
 import asyncio
 from contextlib import asynccontextmanager
+import logging
+logger = logging.getLogger("sec-fastapi")
+logger.setLevel(logging.INFO)
 
 # Import security modules
 from .auth import (
@@ -138,6 +145,9 @@ async def lifespan(app: FastAPI):
     else:
         print("✅ Redis connected successfully")
 
+        # Initialize Postgres connection pool for SEC CRUD
+        await init_pool()
+
     # Initialize ultra-advanced integrations
     try:
         # Initialize PostgreSQL cache manager
@@ -255,13 +265,7 @@ async def security_middleware(request: Request, call_next):
     user_agent = request.headers.get("user-agent", "unknown")
 
     # Log request start
-    logger.info(
-        "Request started",
-        method=request.method,
-        url=str(request.url.path),
-        client_ip=client_ip,
-        user_agent=user_agent
-    )
+    logger.info(f"Request started method={request.method} url={request.url.path} client_ip={client_ip} user_agent={user_agent}")
 
     try:
         # Check for suspicious patterns
@@ -279,13 +283,7 @@ async def security_middleware(request: Request, call_next):
         process_time = time.time() - start_time
 
         # Log response
-        logger.info(
-            "Request completed",
-            method=request.method,
-            url=str(request.url.path),
-            status_code=response.status_code,
-            process_time=f"{process_time:.3f}s"
-        )
+        logger.info(f"Request completed method={request.method} url={request.url.path} status_code={response.status_code} process_time={process_time:.3f}s")
 
         # Add security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -298,13 +296,7 @@ async def security_middleware(request: Request, call_next):
 
     except Exception as e:
         # Log error with full context
-        logger.error(
-            "Request failed",
-            method=request.method,
-            url=str(request.url.path),
-            error=str(e),
-            client_ip=client_ip
-        )
+        logger.error(f"Request failed method={request.method} url={request.url.path} error={e} client_ip={client_ip}")
 
         audit_log(
             action="request_error",
@@ -510,7 +502,7 @@ async def root():
             "realtime_communication": "WebRTC + gaming with collaborative editing",
             "global_analytics": "Business intelligence with predictive analytics",
             "advanced_search": "Full-text search with vector similarity",
-            "ultra_monitoring": "Advanced monitoring with predictive insights"
+            "ultra_monitoring": "Advanced monitoring with ML-powered insights"
         },
         "endpoints": {
             "ultra_demo": "/redis-advanced/demo/{user_id}",
@@ -1042,3 +1034,153 @@ async def test_message():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+usuarios_router = APIRouter(prefix="/usuarios", tags=["SEC - Usuarios"]) 
+
+class UsuarioOut(BaseModel):
+    IdUsuario: int
+    Nome: Optional[str] = None
+    Funcao: Optional[str] = None
+    Departamento: Optional[str] = None
+    Lotacao: Optional[str] = None
+    Perfil: Optional[str] = None
+    Permissao: Optional[str] = None
+    Email: Optional[str] = None
+    Login: Optional[str] = None
+    Senha: Optional[str] = None
+    DataCadastro: Optional[datetime] = None
+    Cadastrante: Optional[str] = None
+    Image: Optional[str] = None
+    DataUpdate: Optional[datetime] = None
+    TipoUpdate: Optional[str] = None
+    Observacao: Optional[str] = None
+
+class OperationResult(BaseModel):
+    ok: bool
+
+def row_to_dict(row) -> dict:
+    return {
+        "IdUsuario": row["IdUsuario"],
+        "Nome": row["Nome"],
+        "Funcao": row["Funcao"],
+        "Departamento": row["Departamento"],
+        "Lotacao": row["Lotacao"],
+        "Perfil": row["Perfil"],
+        "Permissao": row["Permissao"],
+        "Email": row["Email"],
+        "Login": row["Login"],
+        "Senha": row["Senha"],
+        "DataCadastro": row["DataCadastro"],
+        "Cadastrante": row["Cadastrante"],
+        "Image": row["Image"],
+        "DataUpdate": row["DataUpdate"],
+        "TipoUpdate": row["TipoUpdate"],
+        "Observacao": row["Observacao"],
+    }
+
+@usuarios_router.get("/", response_model=List[UsuarioOut])
+async def listar_usuarios():
+    pool = await get_pool()
+    rows = await pool.fetch('SELECT "IdUsuario","Nome","Funcao","Departamento","Lotacao","Perfil","Permissao","Email","Login","Senha","DataCadastro","Cadastrante","Image","DataUpdate","TipoUpdate","Observacao" FROM "SEC"."Usuarios" ORDER BY "IdUsuario" ASC')
+    return [row_to_dict(r) for r in rows]
+
+@usuarios_router.get("/{id}", response_model=UsuarioOut)
+async def obter_usuario(id: int):
+    pool = await get_pool()
+    row = await pool.fetchrow('SELECT "IdUsuario","Nome","Funcao","Departamento","Lotacao","Perfil","Permissao","Email","Login","Senha","DataCadastro","Cadastrante","Image","DataUpdate","TipoUpdate","Observacao" FROM "SEC"."Usuarios" WHERE "IdUsuario"=$1', id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    return row_to_dict(row)
+
+from pydantic import BaseModel
+class UsuarioCreate(BaseModel):
+    Nome: str
+    Funcao: Optional[str] = None
+    Departamento: Optional[str] = None
+    Lotacao: Optional[str] = None
+    Perfil: Optional[str] = None
+    Permissao: Optional[str] = None
+    Email: Optional[str] = None
+    Login: Optional[str] = None
+    Senha: Optional[str] = None
+    Cadastrante: Optional[str] = None
+    Image: Optional[str] = None
+    TipoUpdate: Optional[str] = None
+    Observacao: Optional[str] = None
+
+class UsuarioUpdate(BaseModel):
+    Nome: Optional[str] = None
+    Funcao: Optional[str] = None
+    Departamento: Optional[str] = None
+    Lotacao: Optional[str] = None
+    Perfil: Optional[str] = None
+    Permissao: Optional[str] = None
+    Email: Optional[str] = None
+    Login: Optional[str] = None
+    Senha: Optional[str] = None
+    Cadastrante: Optional[str] = None
+    Image: Optional[str] = None
+    TipoUpdate: Optional[str] = None
+    Observacao: Optional[str] = None
+
+@usuarios_router.post("/", response_model=UsuarioOut)
+async def criar_usuario(payload: UsuarioCreate):
+    pool = await get_pool()
+    row = await pool.fetchrow(
+        'INSERT INTO "SEC"."Usuarios" ("Nome","Funcao","Departamento","Lotacao","Perfil","Permissao","Email","Login","Senha","DataCadastro","Cadastrante","Image","TipoUpdate","Observacao") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING "IdUsuario","Nome","Funcao","Departamento","Lotacao","Perfil","Permissao","Email","Login","Senha","DataCadastro","Cadastrante","Image","DataUpdate","TipoUpdate","Observacao"',
+        payload.Nome,
+        payload.Funcao,
+        payload.Departamento,
+        payload.Lotacao,
+        payload.Perfil,
+        payload.Permissao,
+        payload.Email,
+        payload.Login,
+        payload.Senha,
+        datetime.now(timezone.utc),
+        payload.Cadastrante,
+        payload.Image,
+        payload.TipoUpdate,
+        payload.Observacao,
+    )
+    return row_to_dict(row)
+
+@usuarios_router.put("/{id}", response_model=UsuarioOut)
+async def atualizar_usuario(id: int, payload: UsuarioUpdate):
+    # Construir UPDATE dinâmico via asyncpg
+    data = payload.dict(exclude_unset=True)
+    if not data:
+        raise HTTPException(status_code=400, detail="Nenhum campo para atualizar")
+
+    # Atualiza o timestamp
+    data["DataUpdate"] = datetime.now(timezone.utc)
+
+    # Monta SET com placeholders $1, $2, ... e valores
+    columns = list(data.keys())
+    set_clause = ",".join([f'"{col}"=${i+1}' for i, col in enumerate(columns)])
+    values = [data[col] for col in columns]
+
+    pool = await get_pool()
+    row = await pool.fetchrow(
+        f'UPDATE "SEC"."Usuarios" SET {set_clause} WHERE "IdUsuario"=${len(columns)+1} RETURNING "IdUsuario","Nome","Funcao","Departamento","Lotacao","Perfil","Permissao","Email","Login","Senha","DataCadastro","Cadastrante","Image","DataUpdate","TipoUpdate","Observacao"',
+        *values,
+        id,
+    )
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+    return row_to_dict(row)
+
+@usuarios_router.delete("/{id}", response_model=OperationResult)
+async def remover_usuario(id: int):
+    # Remove via asyncpg e valida existência
+    pool = await get_pool()
+    row = await pool.fetchrow('DELETE FROM "SEC"."Usuarios" WHERE "IdUsuario"=$1 RETURNING "IdUsuario"', id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    return {"ok": True}
+
+# Registrar router
+app.include_router(usuarios_router)

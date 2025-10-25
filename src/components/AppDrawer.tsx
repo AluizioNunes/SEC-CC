@@ -52,7 +52,7 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ trigger }) => {
         <div onClick={() => setOpen(true)} style={{ display: 'inline-flex' }}>{trigger}</div>
       ) : (
         <Button type="text" icon={<DownOutlined />} onClick={() => setOpen(true)}>
-          {t('nav.menu') || 'Menu'}
+          {(t('nav.menu') || 'Menu').toUpperCase()}
         </Button>
       )}
 
@@ -76,7 +76,7 @@ const AppDrawer: React.FC<AppDrawerProps> = ({ trigger }) => {
                 onClick={() => go(opt.path)}
                 style={{ marginRight: 8 }}
               >
-                {opt.label}
+                {String(opt.label).toUpperCase()}
               </Button>
             ))}
           </div>

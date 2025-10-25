@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Modal, Form, Input, Select } from 'antd';
 import { useAdmin, type AdminUser, type Profile } from '../../contexts/AdminContext';
 import { useAuth } from '../../contexts/AuthContext';
+import NavbarCompact from '../NavbarCompact';
 
 interface UsuarioModalProps {
   open: boolean;
@@ -56,12 +57,14 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({ open, onClose, initial }) =
 
   return (
     <Modal
-      title={initial ? 'Editar Usuário' : 'Novo Usuário'}
+      title={<NavbarCompact variant="modalHeader" />}
       open={open}
       onCancel={onClose}
       onOk={handleOk}
       okText={initial ? 'Salvar' : 'Cadastrar'}
+      width={800}
     >
+      {/* Removido header dentro do corpo, substituído por title custom */}
       <Form layout="vertical" form={form}>
         <Form.Item label="Nome" name="name" rules={[{ required: true, message: 'Informe o nome' }]}> 
           <Input />

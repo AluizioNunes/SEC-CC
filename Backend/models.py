@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, Enum, BigInteger
 from sqlalchemy.sql import func
 from database import Base
 import enum
@@ -86,3 +86,24 @@ class Document(Base):
     file_path = Column(String)  # Path in MongoDB or file system
     document_type = Column(String)  # e.g., "proof_of_residence", "portfolio"
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class SECUsuario(Base):
+    __tablename__ = "Usuarios"
+    __table_args__ = {"schema": "SEC"}
+
+    IdUsuario = Column(BigInteger, primary_key=True, index=True)
+    Nome = Column(String(255), nullable=False)
+    Funcao = Column(String(255))
+    Departamento = Column(String(255))
+    Lotacao = Column(String(255))
+    Perfil = Column(String(100))
+    Permissao = Column(String(100))
+    Email = Column(String(255), unique=True)
+    Login = Column(String(100), unique=True)
+    Senha = Column(String(255))
+    DataCadastro = Column(DateTime(timezone=True), server_default=func.now())
+    Cadastrante = Column(String(255))
+    Image = Column(String(1024))
+    DataUpdate = Column(DateTime(timezone=True))
+    TipoUpdate = Column(String(100))
+    Observacao = Column(Text)

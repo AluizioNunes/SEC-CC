@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Modal, Form, Input } from 'antd';
 import { useAdmin, type Profile } from '../../contexts/AdminContext';
 import { useAuth } from '../../contexts/AuthContext';
+import NavbarCompact from '../NavbarCompact';
 
 interface PerfilModalProps {
   open: boolean;
@@ -38,12 +39,14 @@ const PerfilModal: React.FC<PerfilModalProps> = ({ open, onClose, initial }) => 
 
   return (
     <Modal
-      title={initial ? 'Editar Perfil' : 'Novo Perfil'}
+      title={<NavbarCompact variant="modalHeader" />}
       open={open}
       onCancel={onClose}
       onOk={handleOk}
       okText={initial ? 'Salvar' : 'Cadastrar'}
+      width={800}
     >
+      {/* Removido header dentro do corpo, substituído por title custom */}
       <Form layout="vertical" form={form}>
         <Form.Item label="Nome do Perfil" name="name" rules={[{ required: true, message: 'Informe o nome do perfil' }]}> 
           <Input />
