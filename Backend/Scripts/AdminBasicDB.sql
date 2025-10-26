@@ -337,7 +337,7 @@ CREATE TABLE IF NOT EXISTS SEC.Empresa (
     Bairro VARCHAR(100),
     Cidade VARCHAR(100),
     Estado VARCHAR(2),
-    Pais VARCHAR(50) DEFAULT 'Brasil',
+    Pais VARCHAR(50) DEFAULT 'BRASIL',
     Ativo BOOLEAN DEFAULT TRUE,
     Observacoes TEXT,
     Cadastrante VARCHAR(200) NOT NULL,

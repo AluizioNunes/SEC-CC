@@ -159,16 +159,17 @@ services:
       POSTGRES_DB: secdb
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./Backend/Scripts/AdminBasicDB.sql:/docker-entrypoint-initdb.d/001_init.sql
     ports:
       - "5432:5432"
     networks:
       - sec_net
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sec -d secdb"]
       interval: 15s
       timeout: 5s
       retries: 3
+      start_period: 30s
 
   # ========== MONGODB DATABASE ==========
   mongodb:
