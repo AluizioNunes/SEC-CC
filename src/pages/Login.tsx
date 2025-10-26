@@ -23,7 +23,7 @@ import SECGovLogo from '../Images/SEC_GOV-LogoOficial.png';
 const { Title, Paragraph, Text } = Typography;
 
 interface LoginFormValues {
-  email: string;
+  usuario: string;
   password: string;
   remember: boolean;
 }
@@ -60,11 +60,11 @@ const Login: React.FC = () => {
     setError(null);
 
     try {
-      const success = await login(values.email, values.password);
+      const success = await login(values.usuario, values.password);
       if (success) {
         navigate('/dashboard');
       } else {
-        setError('Credenciais inválidas. Verifique seu e-mail e senha.');
+        setError('Credenciais inválidas. Verifique seu usuário/e-mail e senha.');
       }
     } catch (err) {
       setError('Erro interno do servidor. Tente novamente em alguns minutos.');
@@ -73,133 +73,36 @@ const Login: React.FC = () => {
     }
   };
 
-  // Array de imagens culturais do Amazonas
-  const culturalImages = [
-    'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=600&h=800&fit=crop&crop=center',
-    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=800&fit=crop&crop=center',
-    'https://images.unsplash.com/photo-1533460004989-cef01064af7e?w=600&h=800&fit=crop&crop=center',
-    'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600&h=800&fit=crop&crop=center',
-  ];
-
-  const currentImage = React.useMemo(() => culturalImages[Math.floor(Math.random() * culturalImages.length)], []);
-
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#fff',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '10px',
-      width: '100%',
-      overflowX: 'hidden'
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: '100%',
-        height: '100vh',
-        background: '#fff',
-        display: 'flex',
-        overflow: 'hidden'
-      }}>
-        <Row style={{ height: '100%', width: '100%' }}>
-          {/* Lado Esquerdo - Imagem Cultural (65%) */}
-          <Col xs={0} lg={15} xl={16} style={{
-            backgroundImage: `url(${currentImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            minHeight: '100vh'
-          }}>
-            <div style={{
-              textAlign: 'center',
-              color: 'white',
-              zIndex: 2,
-              padding: '30px',
-              maxWidth: '90%'
-            }}>
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-              >
-                <div style={{
-                  fontSize: '50px',
-                  marginBottom: '12px',
-                  opacity: 0.9
-                }}>
-                  🎭
-                </div>
-                <Title level={4} style={{
-                  color: 'white',
-                  marginBottom: '8px',
-                  textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
-                  fontSize: '16px'
-                }}>
--                 Cultura Amazonense
-+                 {t('hero.title')}
-                </Title>
-                <Paragraph style={{
-                  color: 'rgba(255,255,255,0.9)',
-                  fontSize: '12px',
-                  lineHeight: 1.3,
-                  maxWidth: '200px',
-                  margin: '0 auto'
-                }}>
--                 Conecte-se ao Sistema Estadual de Cultura
-+                 {t('hero.subtitle')}
-                </Paragraph>
-              </motion.div>
-            </div>
+    <div style={{ minHeight: '100vh', background: '#f6f8fa' }}>
+      {/* Header */}
+      <div style={{ textAlign: 'center', padding: '16px' }}>
+        <img src={SECGovLogo} alt="SEC Amazonas" style={{ height: '56px' }} />
+        <Title level={4} style={{ marginTop: '12px', marginBottom: '6px' }}>SEC - Cadastro Cultural</Title>
+        <Text type="secondary" style={{ fontSize: '12px' }}>Acesso seguro à plataforma</Text>
+      </div>
 
-            {/* Sobreposição gradiente */}
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'linear-gradient(135deg, rgba(30,60,114,0.4) 0%, rgba(42,82,152,0.2) 100%)',
-              zIndex: 1
-            }} />
-          </Col>
-
-          {/* Lado Direito - Formulário de Login (35%) */}
-          <Col xs={24} lg={9} xl={8} style={{
-            padding: '30px 20px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            background: '#fff',
-            overflowY: 'auto',
-            overflowX: 'hidden'
-          }}>
+      {/* Conteúdo */}
+      <div style={{ maxWidth: 980, margin: '0 auto', padding: '16px' }}>
+        <Row gutter={24}>
+          {/* Coluna de login */}
+          <Col xs={24} md={14}>
             <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{ background: '#fff', borderRadius: '0', padding: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
             >
-              {/* Cabeçalho com logo */}
-              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                <img
-                  src={SECGovLogo}
-                  alt="Logo SEC"
-                  style={{ width: 'auto', height: '108px', objectFit: 'contain' }}
-                />
-                <Paragraph style={{ color: '#666', marginTop: '8px', fontSize: '13px' }}>
-                  Entre na sua conta para continuar
-                </Paragraph>
-              </div>
+              <Title level={5} style={{ marginBottom: '12px' }}>Entrar</Title>
+              <Paragraph type="secondary" style={{ marginBottom: '16px', fontSize: '13px' }}>
+                Insira suas credenciais para acessar o sistema.
+              </Paragraph>
 
-              {/* Formulário */}
               <Form
                 form={form}
                 layout="vertical"
                 onFinish={handleSubmit}
-                disabled={loading}
+                initialValues={{ remember: true }}
               >
                 {error && (
                   <Alert
@@ -211,18 +114,29 @@ const Login: React.FC = () => {
                 )}
 
                 <Form.Item
-                  label="E-mail"
-                  name="email"
+                  label="Usuário ou E-mail"
+                  name="usuario"
                   rules={[
-                    { required: true, message: 'Por favor, digite seu e-mail!' },
-                    { type: 'email', message: 'Digite um e-mail válido!' }
+                    { required: true, message: 'Por favor, digite seu usuário ou e-mail!' },
+                    {
+                      validator: (_, value) => {
+                        if (!value || typeof value !== 'string') {
+                          return Promise.reject(new Error('Por favor, digite seu usuário ou e-mail!'));
+                        }
+                        const isEmail = /\S+@\S+\.\S+/.test(value);
+                        const isUsername = /^[a-zA-Z0-9_.-]{3,}$/.test(value);
+                        return isEmail || isUsername
+                          ? Promise.resolve()
+                          : Promise.reject(new Error('Digite um e-mail válido ou um usuário (mín. 3 caracteres).'));
+                      }
+                    }
                   ]}
                 >
                   <Input
                     prefix={<UserOutlined />}
-                    placeholder="seu@email.com"
+                    placeholder="usuario ou email"
                     size="large"
-                    autoComplete="email"
+                    autoComplete="username"
                     style={{ borderRadius: '0', height: '36px' }}
                   />
                 </Form.Item>
@@ -283,99 +197,112 @@ const Login: React.FC = () => {
                 </Form.Item>
               </Form>
 
-              <Divider style={{ margin: '20px 0' }}>
-                <Text type="secondary">ou continue com</Text>
-              </Divider>
+              {/* Diagnóstico e suporte */}
+              <Divider style={{ margin: '16px 0' }} />
+              <Row gutter={12}>
+                <Col span={12}>
+                  <Button
+                    onClick={handleDeveloperLogin}
+                    icon={<BugOutlined />}
+                    block
+                    style={{
+                      height: '40px',
+                      borderRadius: '0',
+                      fontSize: '13px'
+                    }}
+                  >
+                    Login de Dev
+                  </Button>
+                </Col>
+                <Col span={12}>
+                  <Button
+                    block
+                    icon={<QuestionCircleOutlined />}
+                    style={{ height: '40px', borderRadius: '0', fontSize: '13px' }}
+                  >
+                    Precisa de ajuda?
+                  </Button>
+                </Col>
+              </Row>
+            </motion.div>
+          </Col>
 
-              {/* Integrações Sociais - Apenas ícones */}
-              <div style={{ marginBottom: '20px' }}>
-                <Row gutter={[8, 8]}>
-                  <Col span={6}>
-                    <Button
-                      size="large"
-                      block
-                      icon={<GoogleOutlined />}
-                      style={{
-                        borderRadius: '50%',
-                        border: '1px solid #d9d9d9',
-                        height: '40px',
-                        width: '40px',
-                        padding: 0
-                      }}
-                    />
-                  </Col>
-                  <Col span={6}>
-                    <Button
-                      size="large"
-                      block
-                      icon={<MailOutlined />}
-                      style={{
-                        borderRadius: '50%',
-                        border: '1px solid #d9d9d9',
-                        height: '40px',
-                        width: '40px',
-                        padding: 0
-                      }}
-                    />
-                  </Col>
-                  <Col span={6}>
-                    <Button
-                      size="large"
-                      block
-                      icon={<LinkedinOutlined />}
-                      style={{
-                        borderRadius: '50%',
-                        border: '1px solid #d9d9d9',
-                        height: '40px',
-                        width: '40px',
-                        padding: 0
-                      }}
-                    />
-                  </Col>
-                  <Col span={6}>
-                    <Button
-                      size="large"
-                      block
-                      icon={<InstagramOutlined />}
-                      style={{
-                        borderRadius: '50%',
-                        border: '1px solid #d9d9d9',
-                        height: '40px',
-                        width: '40px',
-                        padding: 0
-                      }}
-                    />
-                  </Col>
-                </Row>
-              </div>
+          {/* Coluna lateral */}
+          <Col xs={24} md={10}>
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{ background: '#fff', borderRadius: '0', padding: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
+            >
+              <Title level={5} style={{ marginBottom: '12px' }}>Acesso Rápido</Title>
+              <Paragraph type="secondary" style={{ marginBottom: '16px', fontSize: '13px' }}>
+                Use um dos provedores abaixo para entrar rapidamente.
+              </Paragraph>
 
-              <Divider style={{ margin: '20px 0' }} />
+              <Row gutter={12}>
+                <Col span={6}>
+                  <Button
+                    size="large"
+                    block
+                    icon={<GoogleOutlined />}
+                    style={{
+                      borderRadius: '50%',
+                      border: '1px solid #d9d9d9',
+                      height: '40px',
+                      width: '40px',
+                      padding: 0
+                    }}
+                  />
+                </Col>
+                <Col span={6}>
+                  <Button
+                    size="large"
+                    block
+                    icon={<MailOutlined />}
+                    style={{
+                      borderRadius: '50%',
+                      border: '1px solid #d9d9d9',
+                      height: '40px',
+                      width: '40px',
+                      padding: 0
+                    }}
+                  />
+                </Col>
+                <Col span={6}>
+                  <Button
+                    size="large"
+                    block
+                    icon={<LinkedinOutlined />}
+                    style={{
+                      borderRadius: '50%',
+                      border: '1px solid #d9d9d9',
+                      height: '40px',
+                      width: '40px',
+                      padding: 0
+                    }}
+                  />
+                </Col>
+                <Col span={6}>
+                  <Button
+                    size="large"
+                    block
+                    icon={<InstagramOutlined />}
+                    style={{
+                      borderRadius: '50%',
+                      border: '1px solid #d9d9d9',
+                      height: '40px',
+                      width: '40px',
+                      padding: 0
+                    }}
+                  />
+                </Col>
+              </Row>
 
-              {/* Botão para desenvolvedor - Ícone pequeno */}
-              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                <Button
-                  type="dashed"
-                  icon={<BugOutlined />}
-                  onClick={handleDeveloperLogin}
-                  loading={loading}
-                  size="large"
-                  style={{
-                    borderRadius: '0',
-                    borderColor: '#1890ff',
-                    color: '#1890ff',
-                    backgroundColor: 'rgba(24, 144, 255, 0.05)',
-                    height: '40px',
-                    fontSize: '13px'
-                  }}
-                >
-                  Desenvolvedor
-                </Button>
-              </div>
+              <Divider style={{ margin: '16px 0' }} />
 
-              <Divider style={{ margin: '20px 0' }} />
-
-              {/* Links adicionais */}
-              <div style={{ textAlign: 'center' }}>
+              {/* CTA */}
+              <div>
                 <Paragraph style={{ color: '#666', marginBottom: '12px', fontSize: '13px' }}>
                   Ainda não tem cadastro?
                 </Paragraph>

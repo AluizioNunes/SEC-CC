@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { AuthApi } from '../services/authApi';
 
 export interface User {
   id: string;
@@ -15,7 +16,7 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (identifier: string, password: string) => Promise<boolean>;
   logout: () => void;
   loading: boolean;
 }
@@ -44,46 +45,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (identifier: string, password: string): Promise<boolean> => {
     setLoading(true);
     try {
-      // Simulação de login - em produção seria uma chamada para API
-      if (email && password) {
-        let mockUser: User;
-
-        if (email.includes('admin') || email.includes('sec')) {
-          mockUser = {
-            id: '1',
-            name: 'Zezinho Correa',
-            email: email,
-            profile: 'admin',
-            city: 'Manaus',
-            state: 'AM',
-            loginTime: new Date().toLocaleString('pt-BR'),
-            onlineTime: '2h 15min'
-          };
-        } else {
-          mockUser = {
-            id: '2',
-            name: email.split('@')[0],
-            email: email,
-            profile: 'user',
-            type: email.includes('pj') ? 'PJ' : 'PF',
-            status: 'approved',
-            city: 'Manaus',
-            state: 'AM',
-            loginTime: new Date().toLocaleString('pt-BR'),
-            onlineTime: '45min'
-          };
-        }
-
-        setUser(mockUser);
-        localStorage.setItem('sec-user', JSON.stringify(mockUser));
+      if (!identifier || !password) {
         setLoading(false);
-        return true;
+        return false;
       }
+
+      const resp = await AuthApi.login({ username: identifier, password });
+
+      // Converter resposta da API para o modelo de User utilizado pelo app
+      const loggedUser: User = {
+        id: String(resp.user?.id ?? ''),
+        name: String(resp.user?.name ?? ''),
+        email: String(resp.user?.email ?? ''),
+        profile: (resp.user?.profile as User['profile']) ?? 'user',
+        loginTime: new Date().toLocaleString('pt-BR'),
+      };
+
+      setUser(loggedUser);
+      localStorage.setItem('sec-user', JSON.stringify(loggedUser));
+      localStorage.setItem('sec-token', resp.access_token);
+      localStorage.setItem('sec-refresh-token', resp.refresh_token);
       setLoading(false);
-      return false;
+      return true;
     } catch (error) {
       console.error('Erro no login:', error);
       setLoading(false);
@@ -94,6 +80,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('sec-user');
+    localStorage.removeItem('sec-token');
+    localStorage.removeItem('sec-refresh-token');
     // Não usar navigate aqui - será tratado pelo componente que chamar logout
   };
 

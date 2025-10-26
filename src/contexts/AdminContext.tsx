@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { UsersApi, UsuarioRecord } from '../services/usersApi';
+import { UsersApi } from '../services/usersApi';
+import type { UsuarioRecord } from '../services/usersApi';
 
 export type PermissionMatrix = {
   screens: {

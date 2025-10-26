@@ -318,7 +318,8 @@ async def security_middleware(request: Request, call_next):
 # Configure CORS with strict settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173", "https://yourdomain.com"],  # Configure allowed origins
+-    allow_origins=["http://localhost:3000", "http://localhost:5173", "https://yourdomain.com"],  # Configure allowed origins
++    allow_origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "https://yourdomain.com"],  # Dev: incluir Vite 5174
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
@@ -362,73 +363,102 @@ async def redis_test():
 
 @app.post("/auth/login")
 async def login(request: Request):
-    """Ultra-secure login endpoint with comprehensive audit logging"""
+    """Login validando usuário/e-mail e senha na tabela SEC.Usuarios.
+    Aceita payload JSON: { "username": string, "password": string }.
+    O campo "username" pode ser usuário (Login) ou e-mail (Email).
+    """
     try:
         body = await request.json()
-        username = body.get("username")
+        identifier = body.get("username") or body.get("email") or body.get("usuario")
         password = body.get("password")
 
-        if not username or not password:
+        if not identifier or not password:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username and password required"
+                detail="Username/email e senha são obrigatórios"
             )
 
-        # Use auth helper to validate user credentials (tests expect 'changeme123')
-        user = authenticate_user(username, password)
-        if user:
-            # Create tokens compatible with tests
-            token_data = {"username": username, "role": user.get("role", "admin")}
-            access_token = create_access_token(token_data)
-            # Keep refresh token using JWTManager with standard 'sub' for internal routes
-            refresh_token = jwt_manager.create_refresh_token({"sub": username, "role": user.get("role", "admin")})
+        # Buscar usuário na tabela SEC.Usuarios
+        pool = await get_pool()
+        row = await pool.fetchrow(
+            'SELECT "IdUsuario","Nome","Email","Login","Senha","Perfil","Permissao" FROM "SEC"."Usuarios" WHERE "Login"=$1 OR "Email"=$1 LIMIT 1',
+            identifier
+        )
 
-            # Log successful login
-            audit_log(
-                action="login",
-                user_id=username,
-                resource="auth_system",
-                details={"ip_address": request.client.host}
-            )
-
-            return {
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-                "token_type": "bearer",
-                "expires_in": 1800
-            }
-        else:
-            # Log failed login attempt
+        if not row:
             audit_log(
                 action="unauthorized_access",
-                user_id=username,
+                user_id=str(identifier),
                 resource="auth_system",
-                details={
-                    "reason": "invalid_credentials",
-                    "ip_address": request.client.host
-                }
+                details={"reason": "user_not_found", "ip_address": request.client.host}
             )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
 
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
+        stored_password = row["Senha"]
+        valid_password = False
+        try:
+            from .auth import pwd_context
+            if isinstance(stored_password, str) and stored_password.startswith("$2"):
+                # Senha armazenada como hash bcrypt
+                valid_password = pwd_context.verify(password, stored_password)
+            else:
+                # Comparação direta (texto puro)
+                valid_password = (password == stored_password)
+        except Exception:
+            # Fallback para comparação direta se verificação falhar
+            valid_password = (password == stored_password)
+
+        if not valid_password:
+            audit_log(
+                action="unauthorized_access",
+                user_id=str(identifier),
+                resource="auth_system",
+                details={"reason": "invalid_password", "ip_address": request.client.host}
             )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
 
+        # Montar dados do token e resposta
+        username_value = row["Login"] or row["Email"] or str(row["IdUsuario"])  # preferir Login
+        role_value = row["Perfil"] or "user"
+
+        token_data = {"sub": str(row["IdUsuario"]), "username": username_value, "role": role_value}
+        access_token = create_access_token(token_data)
+        refresh_token = jwt_manager.create_refresh_token({"sub": str(row["IdUsuario"]), "role": role_value})
+
+        # Log de sucesso
+        audit_log(
+            action="login",
+            user_id=username_value,
+            resource="auth_system",
+            details={"ip_address": request.client.host}
+        )
+
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "expires_in": 1800,
+            "user": {
+                "id": row["IdUsuario"],
+                "name": row["Nome"],
+                "email": row["Email"],
+                "login": row["Login"],
+                "profile": role_value
+            }
+        }
     except HTTPException:
         raise
-    except ValueError as e:
-        # Malformed JSON in request body
-        logger.warning(f"Malformed JSON: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Invalid JSON"
-        )
+    except ValueError:
+        # JSON malformado
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Corpo da requisição inválido")
     except Exception as e:
-        logger.error(f"Login error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+        audit_log(
+            action="system_error",
+            user_id=str(identifier if 'identifier' in locals() else 'unknown'),
+            resource="auth_system",
+            details={"error": str(e), "ip_address": getattr(request.client, 'host', 'unknown')}
         )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erro interno do servidor")
 
 
 @app.post("/auth/refresh")
