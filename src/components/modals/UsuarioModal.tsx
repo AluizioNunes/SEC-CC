@@ -33,7 +33,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({ open, onClose, initial }) =
     const values = await form.validateFields();
     const actor = user ? { id: user.id, name: user.name } : undefined;
     if (initial) {
-      updateUser(initial.id, {
+      await updateUser(initial.id, {
         name: values.name,
         email: values.email,
         type: values.type,
@@ -42,7 +42,7 @@ const UsuarioModal: React.FC<UsuarioModalProps> = ({ open, onClose, initial }) =
       }, actor);
     } else {
       if (!user) return;
-      addUser({
+      await addUser({
         name: values.name,
         email: values.email,
         type: values.type,

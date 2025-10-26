@@ -49,7 +49,7 @@ const Usuarios: React.FC = () => {
     perms.edit || perms.delete ? { title: 'Ações', key: 'actions', render: (_: any, r: any) => (
       <Space>
         {perms.edit && <Button icon={<EditOutlined />} onClick={() => { setEditingUserId(r.id); setModalOpen(true); }}>Editar</Button>}
-        {perms.delete && <Button danger icon={<DeleteOutlined />} onClick={() => { deleteUser(r.id, user ? { id: user.id, name: user.name } : undefined); message.success('Usuário removido'); }}>Excluir</Button>}
+        {perms.delete && <Button danger icon={<DeleteOutlined />} onClick={async () => { await deleteUser(r.id, user ? { id: user.id, name: user.name } : undefined); message.success('Usuário removido'); }}>Excluir</Button>}
       </Space>
     ) } : undefined,
   ].filter(Boolean);

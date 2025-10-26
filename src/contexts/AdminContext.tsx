@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { UsersApi, UsuarioRecord } from '../services/usersApi';
 
 export type PermissionMatrix = {
   screens: {
@@ -72,19 +73,89 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setStore(prev => ({ ...prev, logs: [...(prev.logs || []), { id: log.id || crypto.randomUUID(), at: log.at || Date.now(), entity: log.entity, entityId: log.entityId, action: log.action, by: log.by, details: log.details }] }));
   };
 
+  // Mapeia UsuarioRecord (backend) -> AdminUser (frontend)
+  const mapRecordToAdminUser = (rec: UsuarioRecord): AdminUser => {
+    const profileId = rec.Perfil === 'Administrador' ? 'p-admin' : rec.Perfil ? 'p-usuario' : 'p-usuario';
+    return {
+      id: String(rec.IdUsuario),
+      name: rec.Nome ?? '',
+      email: rec.Email ?? '',
+      profileId,
+      type: 'PF',
+      status: 'active',
+      createdBy: undefined,
+      createdAt: undefined,
+    };
+  };
+
+  // Carrega usuários reais do backend ao iniciar
+  useEffect(() => {
+    (async () => {
+      try {
+        const records = await UsersApi.list();
+        setStore(prev => ({
+          ...prev,
+          users: records.map(mapRecordToAdminUser),
+        }));
+      } catch (err) {
+        console.error('Erro ao listar usuários', err);
+      }
+    })();
+  }, []);
+
+  // Helper para obter nome de perfil pelo id
+  const resolvePerfilNome = (profileId: string): string => {
+    const profile = store.profiles.find(p => p.id === profileId);
+    return profile ? profile.name : 'Usuário';
+  };
+
   // Users
-  const addUser = (u: Omit<AdminUser, 'id'>, actor?: { id: string; name: string }) => {
-    const id = crypto.randomUUID();
-    setStore(prev => ({ ...prev, users: [...prev.users, { ...u, id }] }));
-    if (actor) addLog({ entity: 'user', entityId: id, action: 'create', by: actor, details: u });
+  const addUser = async (u: Omit<AdminUser, 'id'>, actor?: { id: string; name: string }) => {
+    const payload = {
+      Nome: u.name,
+      Email: u.email,
+      Perfil: resolvePerfilNome(u.profileId),
+      Login: u.email || u.name,
+      Cadastrante: actor?.name || 'Admin',
+      TipoUpdate: 'CREATE',
+    };
+    try {
+      const rec = await UsersApi.create(payload);
+      const created = mapRecordToAdminUser(rec);
+      setStore(prev => ({ ...prev, users: [created, ...prev.users] }));
+      if (actor) addLog({ entity: 'user', entityId: created.id, action: 'create', by: actor, details: u });
+    } catch (err) {
+      console.error('Erro ao criar usuário', err);
+      throw err;
+    }
   };
-  const updateUser = (id: string, patch: Partial<AdminUser>, actor?: { id: string; name: string }) => {
-    setStore(prev => ({ ...prev, users: prev.users.map(x => x.id === id ? { ...x, ...patch } : x) }));
-    if (actor) addLog({ entity: 'user', entityId: id, action: 'update', by: actor, details: patch });
+  const updateUser = async (id: string, patch: Partial<AdminUser>, actor?: { id: string; name: string }) => {
+    const numId = Number(id);
+    const payload: any = {};
+    if (patch.name !== undefined) payload.Nome = patch.name;
+    if (patch.email !== undefined) payload.Email = patch.email;
+    if (patch.profileId !== undefined) payload.Perfil = resolvePerfilNome(patch.profileId);
+    payload.TipoUpdate = 'UPDATE';
+    try {
+      const rec = await UsersApi.update(numId, payload);
+      const updated = mapRecordToAdminUser(rec);
+      setStore(prev => ({ ...prev, users: prev.users.map(u => (u.id === id ? { ...u, ...updated } : u)) }));
+      if (actor) addLog({ entity: 'user', entityId: id, action: 'update', by: actor, details: patch });
+    } catch (err) {
+      console.error('Erro ao atualizar usuário', err);
+      throw err;
+    }
   };
-  const deleteUser = (id: string, actor?: { id: string; name: string }) => {
-    setStore(prev => ({ ...prev, users: prev.users.filter(x => x.id !== id) }));
-    if (actor) addLog({ entity: 'user', entityId: id, action: 'delete', by: actor });
+  const deleteUser = async (id: string, actor?: { id: string; name: string }) => {
+    const numId = Number(id);
+    try {
+      await UsersApi.remove(numId);
+      setStore(prev => ({ ...prev, users: prev.users.filter(u => u.id !== id) }));
+      if (actor) addLog({ entity: 'user', entityId: id, action: 'delete', by: actor });
+    } catch (err) {
+      console.error('Erro ao remover usuário', err);
+      throw err;
+    }
   };
 
   // Profiles
