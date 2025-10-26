@@ -14,13 +14,14 @@ export default defineConfig({
     chunkSizeWarningLimit: 1200,
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom', 'react-router-dom'],
-
-          antd: ['antd', '@ant-design/icons'],
-          motion: ['framer-motion'],
-          charts: ['echarts', 'echarts-for-react'],
-          utils: ['axios', 'date-fns', 'dayjs'],
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('react')) return 'react';
+          if (id.includes('antd') || id.includes('@ant-design/icons')) return 'antd';
+          if (id.includes('framer-motion')) return 'motion';
+          if (id.includes('echarts') || id.includes('echarts-for-react')) return 'charts';
+          if (id.includes('axios') || id.includes('date-fns') || id.includes('dayjs')) return 'utils';
+          return undefined;
         },
       },
     },

@@ -21,7 +21,7 @@ COPY tsconfig.node.json ./tsconfig.node.json
 RUN npm run build
 
 # Runtime image
-FROM nginx:alpine AS runtime
+FROM nginx:1.25-alpine AS runtime
 WORKDIR /usr/share/nginx/html
 
 # Copy built static assets from builder stage

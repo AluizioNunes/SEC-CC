@@ -172,7 +172,7 @@ const CadastroPFModal: React.FC<CadastroPFModalProps> = ({ visible, pessoa, onCl
       const pessoaData = {
         cpf: values.cpf,
         nome: values.nome,
-        dataNascimento: values.dataNascimento ? format(values.dataNascimento.toDate(), 'yyyy-MM-dd') : undefined,
+        dataNascimento: format(values.dataNascimento.toDate(), 'yyyy-MM-dd'),
         email: values.email,
         telefone: values.telefone,
         celular: values.celular,
@@ -197,7 +197,7 @@ const CadastroPFModal: React.FC<CadastroPFModalProps> = ({ visible, pessoa, onCl
         documentos: {
           rg: values.documentos.rg,
           orgaoExpedidor: values.documentos.orgaoExpedidor,
-          dataExpedicao: values.documentos.dataExpedicao ? format(values.documentos.dataExpedicao.toDate(), 'yyyy-MM-dd') : undefined,
+          dataExpedicao: format(values.documentos.dataExpedicao.toDate(), 'yyyy-MM-dd'),
           tituloEleitor: values.documentos.tituloEleitor,
           carteiraTrabalho: values.documentos.carteiraTrabalho,
           certificadoReservista: values.documentos.certificadoReservista
