@@ -9,8 +9,9 @@
 
 -- Reset schema para inicialização limpa (primeira execução)
 DROP SCHEMA IF EXISTS SEC CASCADE;
-CREATE SCHEMA IF NOT EXISTS SEC;
-SET search_path TO SEC, public;
+CREATE SCHEMA IF NOT EXISTS SEC AUTHORIZATION sec;
+ALTER ROLE sec SET search_path TO SEC;
+SET search_path TO SEC;
 
 -- =====================================================
 -- FUNÇÕES DE VALIDAÇÃO
@@ -1401,6 +1402,10 @@ FROM information_schema.tables t
 WHERE table_schema = 'sec' 
 AND table_type = 'BASE TABLE'
 ORDER BY table_name;
+
+-- Remover schema public conforme solicitado
+DROP SCHEMA IF EXISTS public CASCADE;
+
 
 
 
