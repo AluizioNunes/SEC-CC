@@ -11,11 +11,11 @@ from fastapi.testclient import TestClient
 import os
 import sys
 
-# Add the app directory to the Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
+# Ensure application package is importable in Docker or locally
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from main import app
-from auth import authenticate_user, create_access_token, verify_token
+from app.main import app
+from app.auth import authenticate_user, create_access_token, verify_token
 
 # Test configuration
 @pytest.fixture
