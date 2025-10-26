@@ -12,6 +12,13 @@ services:
       - ./Docker/nginx/html:/usr/share/nginx/html:ro
     networks:
       - sec_net
+    depends_on:
+      frontend:
+        condition: service_healthy
+      fastapi:
+        condition: service_healthy
+      nestjs:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1/ || exit 1"]
       interval: 15s
@@ -32,10 +39,11 @@ services:
       - sec_net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost"]
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 10s
 
   # ========== FASTAPI BACKEND ==========
   fastapi:
@@ -152,7 +160,7 @@ services:
       POSTGRES_DB: secdb
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./Backend/Scripts/admin_system_postgres (2).sql:/docker-entrypoint-initdb.d/001_init.sql
+      - ./Backend/Scripts/admin_system_postgres.sql:/docker-entrypoint-initdb.d/001_init.sql
     ports:
       - "5432:5432"
     networks:
@@ -192,7 +200,7 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
     volumes:
-      - ./Docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./Docker/prometheus:/etc/prometheus:ro
     networks:
       - sec_net
     restart: unless-stopped
@@ -214,6 +222,13 @@ services:
     volumes:
       - ./Docker/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./Docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+      tempo:
+        condition: service_healthy
     networks:
       - sec_net
     restart: unless-stopped
@@ -231,7 +246,7 @@ services:
       - "3100:3100"
     command: -config.file=/etc/loki/loki-config.yaml
     volumes:
-      - ./Docker/loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - ./Docker/loki:/etc/loki:ro
       - loki_data:/loki
     networks:
       - sec_net
@@ -248,7 +263,7 @@ services:
     container_name: CC-PROMTAIL
     command: -config.file=/etc/promtail/promtail-config.yaml
     volumes:
-      - ./Docker/promtail/promtail-config.yaml:/etc/promtail/promtail-config.yaml:ro
+      - ./Docker/promtail:/etc/promtail:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/log:/var/log:ro
     networks:
@@ -268,7 +283,7 @@ services:
       - "4318:4318"
     command: -config.file=/etc/tempo/tempo-config.yaml
     volumes:
-      - ./Docker/tempo/tempo-config.yaml:/etc/tempo/tempo-config.yaml:ro
+      - ./Docker/tempo:/etc/tempo:ro
       - tempo_data:/var/tempo
     networks:
       - sec_net
