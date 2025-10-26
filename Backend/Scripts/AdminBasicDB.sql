@@ -142,7 +142,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 
 -- Função para validar telefone (brasileiro ou internacional)
 CREATE OR REPLACE FUNCTION SEC.validar_telefone(telefone VARCHAR)
-RETURNS BOOLEAN AS $
+RETURNS BOOLEAN AS $$
 DECLARE
     telefone_limpo VARCHAR;
 BEGIN
@@ -164,11 +164,11 @@ BEGIN
     
     RETURN FALSE;
 END;
-$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 -- Função para validar CNPJ
 CREATE OR REPLACE FUNCTION SEC.validar_cnpj(cnpj VARCHAR)
-RETURNS BOOLEAN AS $
+RETURNS BOOLEAN AS $$
 DECLARE
     cnpj_limpo VARCHAR(14);
     soma INTEGER;
@@ -226,11 +226,11 @@ BEGIN
         RETURN FALSE;
     END IF;
 END;
-$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 -- Função para formatar CNPJ
 CREATE OR REPLACE FUNCTION SEC.formatar_cnpj(cnpj VARCHAR)
-RETURNS VARCHAR AS $
+RETURNS VARCHAR AS $$
 DECLARE
     cnpj_limpo VARCHAR(14);
 BEGIN
@@ -244,11 +244,11 @@ BEGIN
     END IF;
     RETURN cnpj;
 END;
-$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 -- Função para validar CEP
 CREATE OR REPLACE FUNCTION SEC.validar_cep(cep VARCHAR)
-RETURNS BOOLEAN AS $
+RETURNS BOOLEAN AS $$
 DECLARE
     cep_limpo VARCHAR(8);
 BEGIN
@@ -271,11 +271,11 @@ BEGIN
     
     RETURN TRUE;
 END;
-$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 -- Função para formatar CEP
 CREATE OR REPLACE FUNCTION SEC.formatar_cep(cep VARCHAR)
-RETURNS VARCHAR AS $
+RETURNS VARCHAR AS $$
 DECLARE
     cep_limpo VARCHAR(8);
 BEGIN
@@ -287,7 +287,7 @@ BEGIN
     END IF;
     RETURN cep;
 END;
-$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql IMMUTABLE;
 
 -- Função para formatar telefone brasileiro
 CREATE OR REPLACE FUNCTION SEC.formatar_telefone_br(telefone VARCHAR)
@@ -533,14 +533,14 @@ CREATE INDEX idx_auditoria_data ON SEC.AuditoriaGeral(DataOperacao);
 
 -- Trigger para formatar CPF antes de inserir/atualizar
 CREATE OR REPLACE FUNCTION SEC.trg_formatar_cpf()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.CPF IS NOT NULL THEN
         NEW.CPF := SEC.formatar_cpf(NEW.CPF);
     END IF;
     RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_usuario_formatar_cpf
 BEFORE INSERT OR UPDATE ON SEC.Usuario
@@ -549,14 +549,14 @@ EXECUTE FUNCTION SEC.trg_formatar_cpf();
 
 -- Trigger para formatar CNPJ antes de inserir/atualizar
 CREATE OR REPLACE FUNCTION SEC.trg_formatar_cnpj()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.CNPJ IS NOT NULL THEN
         NEW.CNPJ := SEC.formatar_cnpj(NEW.CNPJ);
     END IF;
     RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_empresa_formatar_cnpj
 BEFORE INSERT OR UPDATE ON SEC.Empresa
@@ -565,14 +565,14 @@ EXECUTE FUNCTION SEC.trg_formatar_cnpj();
 
 -- Trigger para formatar CEP antes de inserir/atualizar
 CREATE OR REPLACE FUNCTION SEC.trg_formatar_cep()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.CEP IS NOT NULL THEN
         NEW.CEP := SEC.formatar_cep(NEW.CEP);
     END IF;
     RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_empresa_formatar_cep
 BEFORE INSERT OR UPDATE ON SEC.Empresa
@@ -581,7 +581,7 @@ EXECUTE FUNCTION SEC.trg_formatar_cep();
 
 -- Trigger para converter campos para MAIÚSCULO (EMPRESA)
 CREATE OR REPLACE FUNCTION SEC.trg_empresa_maiusculo()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     NEW.RazaoSocial := UPPER(TRIM(NEW.RazaoSocial));
     NEW.NomeFantasia := UPPER(TRIM(NEW.NomeFantasia));
@@ -624,7 +624,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_empresa_maiusculo
 BEFORE INSERT OR UPDATE ON SEC.Empresa
@@ -633,7 +633,7 @@ EXECUTE FUNCTION SEC.trg_empresa_maiusculo();
 
 -- Trigger para formatar telefones antes de inserir/atualizar
 CREATE OR REPLACE FUNCTION SEC.trg_formatar_telefones()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     IF NEW.Celular IS NOT NULL AND LEFT(REGEXP_REPLACE(NEW.Celular, '[^0-9]', '', 'g'), 2) = '55' THEN
         NEW.Celular := SEC.formatar_telefone_br(NEW.Celular);
@@ -643,7 +643,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_usuario_formatar_telefones
 BEFORE INSERT OR UPDATE ON SEC.Usuario
@@ -652,7 +652,7 @@ EXECUTE FUNCTION SEC.trg_formatar_telefones();
 
 -- Trigger para converter campos para MAIÚSCULO/minúsculo (USUARIO)
 CREATE OR REPLACE FUNCTION SEC.trg_usuario_case()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     -- Campos em MAIÚSCULO
     NEW.Nome := UPPER(TRIM(NEW.Nome));
@@ -692,7 +692,7 @@ BEGIN
     
     RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_usuario_case
 BEFORE INSERT OR UPDATE ON SEC.Usuario
@@ -701,17 +701,17 @@ EXECUTE FUNCTION SEC.trg_usuario_case();
 
 -- Trigger para atualizar campos de auditoria no UPDATE
 CREATE OR REPLACE FUNCTION SEC.trg_atualizar_auditoria()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     NEW.DataUpdate := CURRENT_TIMESTAMP;
     -- CadastranteUpdate deve ser setado pela aplicação
     RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 -- Trigger para converter campos para MAIÚSCULO (DEPARTAMENTO)
 CREATE OR REPLACE FUNCTION SEC.trg_departamento_maiusculo()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     NEW.Sigla := UPPER(TRIM(NEW.Sigla));
     NEW.Departamento := UPPER(TRIM(NEW.Departamento));
@@ -727,7 +727,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_departamento_maiusculo
 BEFORE INSERT OR UPDATE ON SEC.Departamento
@@ -736,7 +736,7 @@ EXECUTE FUNCTION SEC.trg_departamento_maiusculo();
 
 -- Trigger para converter campos para MAIÚSCULO (PERFIL)
 CREATE OR REPLACE FUNCTION SEC.trg_perfil_maiusculo()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     NEW.NomePerfil := UPPER(TRIM(NEW.NomePerfil));
     IF NEW.Descricao IS NOT NULL THEN
@@ -751,7 +751,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_perfil_maiusculo
 BEFORE INSERT OR UPDATE ON SEC.Perfil
@@ -760,7 +760,7 @@ EXECUTE FUNCTION SEC.trg_perfil_maiusculo();
 
 -- Trigger para converter campos para MAIÚSCULO (PERMISSAO)
 CREATE OR REPLACE FUNCTION SEC.trg_permissao_maiusculo()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     NEW.NomePermissao := UPPER(TRIM(NEW.NomePermissao));
     IF NEW.Descricao IS NOT NULL THEN
@@ -779,7 +779,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_permissao_maiusculo
 BEFORE INSERT OR UPDATE ON SEC.Permissao
@@ -788,12 +788,12 @@ EXECUTE FUNCTION SEC.trg_permissao_maiusculo();
 
 -- Trigger para converter campos para MAIÚSCULO (PERFILPERMISSAO)
 CREATE OR REPLACE FUNCTION SEC.trg_perfilpermissao_maiusculo()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     NEW.Cadastrante := UPPER(TRIM(NEW.Cadastrante));
     RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_perfilpermissao_maiusculo
 BEFORE INSERT OR UPDATE ON SEC.PerfilPermissao
@@ -802,12 +802,12 @@ EXECUTE FUNCTION SEC.trg_perfilpermissao_maiusculo();
 
 -- Trigger para converter campos para MAIÚSCULO (USUARIOPERFIL)
 CREATE OR REPLACE FUNCTION SEC.trg_usuarioperfil_maiusculo()
-RETURNS TRIGGER AS $
+RETURNS TRIGGER AS $$
 BEGIN
     NEW.Cadastrante := UPPER(TRIM(NEW.Cadastrante));
     RETURN NEW;
 END;
-$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;
 
 CREATE TRIGGER trg_usuarioperfil_maiusculo
 BEFORE INSERT OR UPDATE ON SEC.UsuarioPerfil
@@ -884,8 +884,8 @@ BEGIN
     ) VALUES (
         TG_TABLE_NAME,
         CASE 
-            WHEN TG_OP = 'DELETE' THEN (to_jsonb(OLD) ->> CONCAT('Id', TG_TABLE_NAME))::INTEGER
-            ELSE (to_jsonb(NEW) ->> CONCAT('Id', TG_TABLE_NAME))::INTEGER
+            WHEN TG_OP = 'DELETE' THEN (to_jsonb(OLD) ->> CONCAT('id', TG_TABLE_NAME))::INTEGER
+            ELSE (to_jsonb(NEW) ->> CONCAT('id', TG_TABLE_NAME))::INTEGER
         END,
         TG_OP,
         v_usuario,
@@ -987,7 +987,7 @@ WHERE d.DeletadoLogico = FALSE;
 
 -- Inserir Empresa padrão
 INSERT INTO SEC.Empresa (RazaoSocial, NomeFantasia, CNPJ, Telefone, Email, Ativo, Cadastrante)
-VALUES ('SISTEMA ADMINISTRATIVO LTDA', 'Sistema Admin', '00.000.000/0001-00', '+55 (11) 99999-9999', 'contato@sistema.com.br', TRUE, 'SYSTEM')
+VALUES ('SISTEMA ADMINISTRATIVO LTDA', 'Sistema Admin', '00.000.000/0001-91', '+55 (11) 99999-9999', 'contato@sistema.com.br', TRUE, 'SYSTEM')
 ON CONFLICT DO NOTHING;
 
 -- Inserir Departamentos padrão
@@ -1071,7 +1071,7 @@ CREATE OR REPLACE PROCEDURE SEC.soft_delete(
     p_usuario VARCHAR
 )
 LANGUAGE plpgsql
-AS $
+AS $$
 DECLARE
     v_sql TEXT;
 BEGIN
@@ -1079,14 +1079,14 @@ BEGIN
         'UPDATE SEC.%I SET DeletadoLogico = TRUE, CadastranteDelete = %L, DataDelete = CURRENT_TIMESTAMP WHERE %I = %s',
         p_tabela,
         p_usuario,
-        'Id' || p_tabela,
+        LOWER('id' || p_tabela),
         p_id
     );
     EXECUTE v_sql;
     
     RAISE NOTICE 'Registro % da tabela % marcado como deletado por %', p_id, p_tabela, p_usuario;
 END;
-$;
+$$;
 
 -- Procedure para restaurar registro deletado logicamente
 CREATE OR REPLACE PROCEDURE SEC.restaurar_registro(
@@ -1095,7 +1095,7 @@ CREATE OR REPLACE PROCEDURE SEC.restaurar_registro(
     p_usuario VARCHAR
 )
 LANGUAGE plpgsql
-AS $
+AS $$
 DECLARE
     v_sql TEXT;
 BEGIN
@@ -1103,14 +1103,14 @@ BEGIN
         'UPDATE SEC.%I SET DeletadoLogico = FALSE, CadastranteUpdate = %L, DataUpdate = CURRENT_TIMESTAMP WHERE %I = %s',
         p_tabela,
         p_usuario,
-        'Id' || p_tabela,
+        LOWER('id' || p_tabela),
         p_id
     );
     EXECUTE v_sql;
     
     RAISE NOTICE 'Registro % da tabela % restaurado por %', p_id, p_tabela, p_usuario;
 END;
-$;
+$$;
 
 -- Procedure para listar histórico de alterações de um registro
 CREATE OR REPLACE FUNCTION SEC.obter_historico_registro(
@@ -1125,7 +1125,7 @@ RETURNS TABLE (
     CamposAlterados TEXT[]
 )
 LANGUAGE plpgsql
-AS $
+AS $$
 BEGIN
     RETURN QUERY
     SELECT 
@@ -1139,7 +1139,7 @@ BEGIN
     AND a.IdRegistro = p_id
     ORDER BY a.DataOperacao DESC;
 END;
-$;
+$$;
 
 -- Função para obter permissões de um usuário
 CREATE OR REPLACE FUNCTION SEC.obter_permissoes_usuario(p_idusuario INTEGER)
@@ -1150,7 +1150,7 @@ RETURNS TABLE (
     TipoPermissao VARCHAR
 )
 LANGUAGE plpgsql
-AS $
+AS $$
 BEGIN
     RETURN QUERY
     SELECT DISTINCT
@@ -1170,7 +1170,7 @@ BEGIN
     AND pm.Ativo = TRUE
     ORDER BY pm.Modulo, pm.TipoPermissao;
 END;
-$;
+$$;
 
 -- Função para verificar se usuário tem permissão específica
 CREATE OR REPLACE FUNCTION SEC.usuario_tem_permissao(
@@ -1179,7 +1179,7 @@ CREATE OR REPLACE FUNCTION SEC.usuario_tem_permissao(
 )
 RETURNS BOOLEAN
 LANGUAGE plpgsql
-AS $
+AS $$
 DECLARE
     v_tem_permissao BOOLEAN;
 BEGIN
@@ -1200,7 +1200,7 @@ BEGIN
     
     RETURN v_tem_permissao;
 END;
-$;
+$$;
 
 -- Procedure para registrar login de usuário
 CREATE OR REPLACE PROCEDURE SEC.registrar_login(
@@ -1208,7 +1208,7 @@ CREATE OR REPLACE PROCEDURE SEC.registrar_login(
     p_sucesso BOOLEAN DEFAULT TRUE
 )
 LANGUAGE plpgsql
-AS $
+AS $$
 BEGIN
     IF p_sucesso THEN
         UPDATE SEC.Usuario
@@ -1233,7 +1233,7 @@ BEGIN
         AND Bloqueado = FALSE;
     END IF;
 END;
-$;
+$$;
 
 -- Procedure para desbloquear usuário
 CREATE OR REPLACE PROCEDURE SEC.desbloquear_usuario(
@@ -1241,7 +1241,7 @@ CREATE OR REPLACE PROCEDURE SEC.desbloquear_usuario(
     p_usuario_admin VARCHAR
 )
 LANGUAGE plpgsql
-AS $
+AS $$
 BEGIN
     UPDATE SEC.Usuario
     SET 
@@ -1255,7 +1255,7 @@ BEGIN
     
     RAISE NOTICE 'Usuário % desbloqueado por %', p_idusuario, p_usuario_admin;
 END;
-$;
+$$;
 
 -- =====================================================
 -- COMENTÁRIOS NAS TABELAS E COLUNAS
@@ -1401,3 +1401,11 @@ FROM information_schema.tables t
 WHERE table_schema = 'sec' 
 AND table_type = 'BASE TABLE'
 ORDER BY table_name;
+
+
+
+
+
+
+
+

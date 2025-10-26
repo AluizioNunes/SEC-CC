@@ -5,7 +5,6 @@ services:
     container_name: CC-NGINX
     ports:
       - "80:80"
-      - "8080:80"
     restart: unless-stopped
     volumes:
       - ./Docker/nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -160,7 +159,7 @@ services:
       POSTGRES_DB: secdb
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./Backend/Scripts/admin_system_postgres.sql:/docker-entrypoint-initdb.d/001_init.sql
+      - ./Backend/Scripts/AdminBasicDB.sql:/docker-entrypoint-initdb.d/001_init.sql
     ports:
       - "5432:5432"
     networks:
