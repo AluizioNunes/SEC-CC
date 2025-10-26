@@ -115,6 +115,9 @@ services:
       - HOST=fastapi
       - PORT=8000
       - REDIS_URL=redis://:redispassword2024@redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=redispassword2024
       - DATABASE_URL=postgresql+asyncpg://sec:secpass2024@postgres:5432/secdb
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
