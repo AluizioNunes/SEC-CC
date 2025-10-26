@@ -7,13 +7,9 @@
 -- Criar Database (execute separadamente se necessário)
 -- CREATE DATABASE SEC WITH ENCODING 'UTF8';
 
--- Conectar ao banco SEC
-\c SEC;
-
--- Criar Schema
+-- Reset schema para inicialização limpa (primeira execução)
+DROP SCHEMA IF EXISTS SEC CASCADE;
 CREATE SCHEMA IF NOT EXISTS SEC;
-
--- Setar o search_path
 SET search_path TO SEC, public;
 
 -- =====================================================
@@ -1373,12 +1369,12 @@ CREATE INDEX idx_usuario_deletado ON SEC.Usuario(DeletadoLogico) WHERE DeletadoL
 -- =====================================================
 
 -- Exibir resumo das tabelas criadas
-DO $
+DO $$
 DECLARE
     v_count INTEGER;
 BEGIN
     SELECT COUNT(*) INTO v_count FROM information_schema.tables 
-    WHERE table_schema = 'SEC' AND table_type = 'BASE TABLE';
+    WHERE table_schema = 'sec' AND table_type = 'BASE TABLE';
     
     RAISE NOTICE '================================================';
     RAISE NOTICE 'SCRIPT EXECUTADO COM SUCESSO!';
@@ -1394,14 +1390,14 @@ BEGIN
     RAISE NOTICE '';
     RAISE NOTICE 'IMPORTANTE: Altere a senha padrão após o primeiro login!';
     RAISE NOTICE '================================================';
-END $;
+END $$;
 
 -- Listar todas as tabelas criadas
 SELECT 
     table_name AS "Tabela",
     (SELECT COUNT(*) FROM information_schema.columns 
-     WHERE table_schema = 'SEC' AND table_name = t.table_name) AS "Colunas"
+     WHERE table_schema = 'sec' AND table_name = t.table_name) AS "Colunas"
 FROM information_schema.tables t
-WHERE table_schema = 'SEC' 
+WHERE table_schema = 'sec' 
 AND table_type = 'BASE TABLE'
 ORDER BY table_name;
