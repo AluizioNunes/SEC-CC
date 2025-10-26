@@ -1,0 +1,2 @@
+This placeholder ensures the public directory is included in Docker build context.
+Remove if you add real static assets here.
