@@ -155,9 +155,9 @@ jwt_manager = JWTManager()
 
 def authenticate_user(username: str, password: str) -> Optional[Dict[str, Any]]:
     """Basic user authentication for tests.
-    Accepts a static admin user; returns None for invalid credentials.
+    Accepts static admin user with 'changeme123' or '123456'.
     """
-    if username == "admin" and password == "changeme123":
+    if username == "admin" and password in {"changeme123", "123456"}:
         return {"username": "admin", "role": "admin"}
     return None
 
