@@ -1,8 +1,9 @@
 fastapi==0.115.5
 uvicorn[standard]==0.32.0
 redis==5.0.8
-asyncpg==0.29.0
+asyncpg==0.30.0
 motor==3.3.2
+pymongo==4.9.0
 aio-pika==9.4.1
 
 # JWT Authentication - Simplified versions for Docker compatibility
@@ -28,9 +29,12 @@ opentelemetry-instrumentation==0.42b0
 opentelemetry-instrumentation-fastapi==0.42b0
 
 # Validation & Serialization
-pydantic==2.5.0
+pydantic==2.9.2
 pydantic-settings==2.1.0
 
 # Additional utilities
 requests==2.31.0
 httpx==0.24.1
+
+# Tests
+pytest==7.4.4

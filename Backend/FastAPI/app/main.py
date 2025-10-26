@@ -15,6 +15,8 @@ import time
 import asyncio
 from contextlib import asynccontextmanager
 import logging
+# Removed motor import to avoid startup ImportError
+# from motor.motor_asyncio import AsyncIOMotorClient
 logger = logging.getLogger("sec-fastapi")
 logger.setLevel(logging.INFO)
 
@@ -711,6 +713,37 @@ async def liveness_probe():
             status_code=500,
             content={"status": "dead", "reason": str(e)}
         )
+
+@app.get("/health/db")
+async def database_health():
+    """Database health status for Postgres and MongoDB"""
+    status = {}
+    # Check PostgreSQL via asyncpg pool
+    try:
+        pool = await get_pool()
+        async with pool.acquire() as conn:
+            val = await conn.fetchval('SELECT 1')
+        status["postgres"] = bool(val == 1)
+    except Exception as e:
+        status["postgres"] = False
+        status["postgres_error"] = str(e)
+
+    # Check MongoDB via PyMongo ping (non-async)
+    try:
+        import os
+        from pymongo import MongoClient
+        mongo_url = os.getenv("MONGODB_URL", "mongodb://mongodb:27017/secmongo")
+        client = MongoClient(mongo_url, serverSelectionTimeoutMS=2000)
+        ping = client.admin.command("ping")
+        status["mongodb"] = ping.get("ok", 0) == 1
+        client.close()
+    except Exception as e:
+        status["mongodb"] = False
+        status["mongodb_error"] = str(e)
+
+    status["status"] = "healthy" if (status.get("postgres") and status.get("mongodb")) else "degraded"
+    status["timestamp"] = time.time()
+    return status
 
 
 @app.get("/metrics")

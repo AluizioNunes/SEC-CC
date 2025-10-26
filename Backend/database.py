@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Database URLs
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://sec:secpass2024@localhost:5434/secdb")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://sec:secpass2024@localhost:5432/secdb")
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27018/secmongo")
 
 # SQLAlchemy setup for PostgreSQL

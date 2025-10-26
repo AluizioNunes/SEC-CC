@@ -54,12 +54,19 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       - SERVICE_NAME=fastapi
       - HOST=fastapi
       - PORT=8000
       - REDIS_URL=redis://:redispassword2024@redis:6379/0
       - DATABASE_URL=postgresql+asyncpg://sec:secpass2024@postgres:5432/secdb
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=sec
+      - POSTGRES_PASSWORD=secpass2024
+      - POSTGRES_DB=secdb
       - MONGODB_URL=mongodb://mongodb:27017/secmongo
     healthcheck:
       test: ["CMD-SHELL", "python - <<'PY'\nimport sys, urllib.request\ntry:\n    with urllib.request.urlopen('http://localhost:8000/health/live', timeout=5) as r:\n        sys.exit(0 if r.status == 200 else 1)\nexcept Exception:\n    sys.exit(1)\nPY"]
@@ -88,6 +95,9 @@ services:
       - REDIS_PASSWORD=redispassword2024
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
+      - POSTGRES_USER=sec
+      - POSTGRES_PASSWORD=secpass2024
+      - POSTGRES_DB=secdb
       - MONGODB_HOST=mongodb
     healthcheck:
       test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:3000/health || exit 1"]
@@ -112,6 +122,26 @@ services:
       timeout: 5s
       retries: 3
 
+  # ========== RABBITMQ ==========
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: CC-RABBITMQ
+    ports:
+      - "5672:5672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - sec_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
   # ========== POSTGRESQL DATABASE ==========
   postgres:
     image: postgres:17.6-alpine
@@ -124,7 +154,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./Docker/postgres/init.sql:/docker-entrypoint-initdb.d/001_init.sql
     ports:
-      - "5434:5432"
+      - "5432:5432"
     networks:
       - sec_net
     healthcheck:
@@ -193,6 +223,82 @@ services:
       timeout: 5s
       retries: 3
 
+  # ========== LOKI ==========
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: CC-LOKI
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - ./Docker/loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - loki_data:/loki
+    networks:
+      - sec_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:3100/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ========== PROMTAIL ==========
+  promtail:
+    image: grafana/promtail:2.9.4
+    container_name: CC-PROMTAIL
+    command: -config.file=/etc/promtail/promtail-config.yaml
+    volumes:
+      - ./Docker/promtail/promtail-config.yaml:/etc/promtail/promtail-config.yaml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/log:/var/log:ro
+    networks:
+      - sec_net
+    depends_on:
+      loki:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ========== TEMPO ==========
+  tempo:
+    image: grafana/tempo:2.3.0
+    container_name: CC-TEMPO
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
+    command: -config.file=/etc/tempo/tempo-config.yaml
+    volumes:
+      - ./Docker/tempo/tempo-config.yaml:/etc/tempo/tempo-config.yaml:ro
+      - tempo_data:/var/tempo
+    networks:
+      - sec_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:3200/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ========== CADVISOR ==========
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: CC-CADVISOR
+    ports:
+      - "8081:8080"
+    networks:
+      - sec_net
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:8080/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
 networks:
   sec_net:
     driver: bridge
@@ -200,3 +306,6 @@ networks:
 volumes:
   postgres_data:
   mongo_data:
+  rabbitmq_data:
+  loki_data:
+  tempo_data:

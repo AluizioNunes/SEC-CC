@@ -20,10 +20,17 @@ class MessageHandler:
         try:
             # Start consuming messages from Redis Streams
             asyncio.create_task(self.consume_redis_messages())
-            
-            # Start consuming messages from RabbitMQ
-            asyncio.create_task(self.consume_rabbitmq_messages())
-            
+
+            # Start RabbitMQ consumer only if available
+            try:
+                from .message_broker import hybrid_broker
+                if getattr(hybrid_broker, "rabbitmq_channel", None):
+                    asyncio.create_task(self.consume_rabbitmq_messages())
+                else:
+                    print("⚠️  RabbitMQ não disponível; consumidor desabilitado")
+            except Exception:
+                print("⚠️  RabbitMQ não disponível; consumidor desabilitado")
+
             print("✅ Message handler initialized")
         except Exception as e:
             print(f"❌ Message handler initialization failed: {e}")

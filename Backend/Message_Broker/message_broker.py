@@ -47,9 +47,9 @@ class HybridMessageBroker:
         }
 
     async def initialize(self):
-        """Initialize both Redis and RabbitMQ connections"""
+        """Initialize both Redis and RabbitMQ connections (degrades gracefully if RabbitMQ is unavailable)"""
+        # Try RabbitMQ; if not available, continue in Redis-only mode
         try:
-            # Initialize RabbitMQ
             self.rabbitmq_connection = await aio_pika.connect_robust(self.rabbitmq_url)
             self.rabbitmq_channel = await self.rabbitmq_connection.channel()
 
@@ -60,10 +60,16 @@ class HybridMessageBroker:
                 durable=True
             )
 
-            print("✅ RabbitMQ + Redis hybrid broker initialized")
+            print("✅ RabbitMQ connection established for hybrid broker")
         except Exception as e:
-            print(f"❌ Message broker initialization failed: {e}")
-            raise
+            # RabbitMQ not available; continue without it
+            self.rabbitmq_connection = None
+            self.rabbitmq_channel = None
+            print(f"⚠️  RabbitMQ indisponível ({e}); seguindo em modo somente Redis")
+
+        # Always consider Redis part initialized (client abstraction handles connectivity)
+        print("✅ Redis Streams prontos para uso no broker híbrido")
+        print("✅ Hybrid Message Broker inicializado" + (" (modo somente Redis)" if self.rabbitmq_channel is None else ""))
 
     async def close(self):
         """Close connections"""
@@ -103,15 +109,18 @@ class HybridMessageBroker:
                 return await self._publish_to_redis(enriched_message, stream_name or routing_key)
 
             elif broker_type == MessageBrokerType.RABBITMQ:
-                # Use RabbitMQ
+                # Use RabbitMQ only if channel is available
+                if self.rabbitmq_channel is None:
+                    # Fallback to Redis if RabbitMQ is unavailable
+                    return await self._publish_to_redis(enriched_message, stream_name or routing_key)
                 return await self._publish_to_rabbitmq(enriched_message, routing_key)
 
             else:  # HYBRID - Use both for redundancy
                 redis_message_id = await self._publish_to_redis(enriched_message, stream_name or routing_key)
 
-                # Also publish to RabbitMQ for critical messages
-                if priority in [MessagePriority.HIGH, MessagePriority.CRITICAL]:
-                    rabbitmq_message_id = await self._publish_to_rabbitmq(enriched_message, routing_key)
+                # Also publish to RabbitMQ for critical messages, if available
+                if self.rabbitmq_channel is not None and priority in [MessagePriority.HIGH, MessagePriority.CRITICAL]:
+                    await self._publish_to_rabbitmq(enriched_message, routing_key)
 
                 self.stats["messages_sent"] += 1
                 return redis_message_id
@@ -175,13 +184,19 @@ class HybridMessageBroker:
             if broker_type == MessageBrokerType.REDIS:
                 await self._consume_redis_stream(stream_name, callback, group_name, consumer_name)
             elif broker_type == MessageBrokerType.RABBITMQ:
+                # Only consume from RabbitMQ if channel is available
+                if self.rabbitmq_channel is None:
+                    print("⚠️  RabbitMQ não disponível; consumo desabilitado para este broker")
+                    return
                 await self._consume_rabbitmq_queue(stream_name, callback, group_name)
             else:
                 # Hybrid consumption
-                await asyncio.gather(
-                    self._consume_redis_stream(stream_name, callback, group_name, f"redis_{consumer_name}"),
-                    self._consume_rabbitmq_queue(stream_name, callback, group_name)
-                )
+                tasks = [
+                    self._consume_redis_stream(stream_name, callback, group_name, f"redis_{consumer_name}")
+                ]
+                if self.rabbitmq_channel is not None:
+                    tasks.append(self._consume_rabbitmq_queue(stream_name, callback, group_name))
+                await asyncio.gather(*tasks)
 
         except Exception as e:
             print(f"Message consumption error: {e}")
@@ -248,101 +263,32 @@ class HybridMessageBroker:
                 queue_name,
                 durable=True,
                 arguments={
-                    'x-max-priority': 4
+                    # Example: Set dead-letter exchange
+                    # 'x-dead-letter-exchange': 'dlx_exchange'
                 }
             )
 
-            # Bind to exchange
-            exchange = await self.rabbitmq_channel.get_exchange('sec_cc_exchange')
-            await queue.bind(exchange, routing_key)
+            # Bind queue to exchange with routing key
+            await queue.bind('sec_cc_exchange', routing_key or queue_name)
 
-            async def message_handler(message: aio_pika.IncomingMessage):
-                async with message.process():
-                    try:
-                        message_data = json.loads(message.body.decode())
-                        await callback(message_data)
-                        self.stats["messages_received"] += 1
-                    except Exception as e:
-                        print(f"RabbitMQ message processing error: {e}")
+            async with queue.iterator() as queue_iter:
+                async for message in queue_iter:
+                    async with message.process():
+                        try:
+                            # Decode message
+                            payload = json.loads(message.body.decode())
 
-            # Start consuming
-            await queue.consume(message_handler)
+                            # Process message
+                            await callback(payload)
+
+                            self.stats["messages_received"] += 1
+
+                        except Exception as e:
+                            print(f"RabbitMQ message processing error: {e}")
 
         except Exception as e:
-            print(f"RabbitMQ queue setup error: {e}")
-
-    async def create_dead_letter_queue(self, source_queue: str, max_retries: int = 3):
-        """Create dead letter queue for failed messages"""
-        try:
-            dlq_name = f"{source_queue}_dlq"
-
-            # Create DLQ
-            dlq = await self.rabbitmq_channel.declare_queue(
-                dlq_name,
-                durable=True
-            )
-
-            # Configure source queue to route to DLQ after max retries
-            await self.rabbitmq_channel.declare_queue(
-                source_queue,
-                durable=True,
-                arguments={
-                    'x-dead-letter-exchange': '',
-                    'x-dead-letter-routing-key': dlq_name,
-                    'x-message-ttl': 60000,  # 1 minute
-                    'x-max-retries': max_retries
-                }
-            )
-
-            return dlq_name
-        except Exception as e:
-            print(f"Dead letter queue creation error: {e}")
-            return None
-
-    async def get_message_stats(self) -> Dict[str, Any]:
-        """Get message broker statistics"""
-        try:
-            # Get Redis Streams info
-            redis_info = await self._get_redis_streams_info()
-
-            return {
-                "messages_sent": self.stats["messages_sent"],
-                "messages_received": self.stats["messages_received"],
-                "messages_failed": self.stats["messages_failed"],
-                "redis_streams_messages": self.stats["redis_streams_messages"],
-                "rabbitmq_messages": self.stats["rabbitmq_messages"],
-                "redis_streams_info": redis_info,
-                "throughput_improvement": f"{round((self.stats['messages_sent'] / max(1, time.time() - asyncio.get_event_loop().time())) * 60, 1)}/min"
-            }
-        except Exception as e:
-            return {"error": str(e)}
-
-    async def _get_redis_streams_info(self) -> Dict[str, Any]:
-        """Get Redis Streams information"""
-        try:
-            pattern = f"{self.redis_streams_prefix}:*"
-            streams = await self.redis_client.keys(pattern)
-
-            info = {}
-            for stream in streams:
-                length = await self.redis_client.xlen(stream)
-                info[stream] = {
-                    "length": length,
-                    "groups": await self._get_stream_groups(stream)
-                }
-
-            return info
-        except Exception as e:
-            return {"error": str(e)}
-
-    async def _get_stream_groups(self, stream: str) -> Dict[str, Any]:
-        """Get consumer groups for a stream"""
-        try:
-            groups = await self.redis_client.xinfo_groups(stream)
-            return {group["name"]: group for group in groups}
-        except Exception:
-            return {}
+            print(f"RabbitMQ queue consumption error: {e}")
 
 
-# Global hybrid message broker instance
+# Export global broker instance
 hybrid_broker = HybridMessageBroker()

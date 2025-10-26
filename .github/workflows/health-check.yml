@@ -1,0 +1,46 @@
+name: Health Checks via Nginx
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        run: |
+          docker version
+          docker compose version
+
+      - name: Build and start services
+        run: |
+          docker compose up -d --build nginx fastapi nestjs postgres mongodb redis
+
+      - name: Wait for Nginx to be ready
+        run: |
+          for i in {1..40}; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/status || true)
+            if [ "$status" = "200" ]; then
+              echo "Nginx is ready"; break
+            fi
+            echo "Waiting for Nginx... ($i)"; sleep 3
+          done
+
+      - name: Check FastAPI /api/v1/health/db
+        run: |
+          curl -fsS --retry 10 --retry-delay 5 http://localhost/api/v1/health/db
+
+      - name: Check NestJS /api/v2/database/status
+        run: |
+          curl -fsS --retry 10 --retry-delay 5 http://localhost/api/v2/database/status
+
+      - name: Tear down
+        if: always()
+        run: |
+          docker compose down -v

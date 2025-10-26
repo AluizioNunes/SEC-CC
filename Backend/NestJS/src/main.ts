@@ -7,6 +7,7 @@ import { ServiceRegistrationService } from './service-registration/service-regis
 import { ServiceRegistrationModule } from './service-registration/service-registration.module';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { DatabaseModule } from './database/database.module';
 
 // Security imports
 import helmet from 'helmet'
@@ -185,6 +186,7 @@ class AppController {
 @Module({
   imports: [
     ServiceRegistrationModule,
+    DatabaseModule,
     WinstonModule.forRoot({
       transports: [
         new winston.transports.Console({

@@ -4,6 +4,7 @@ import { RedisModule } from './redis/redis.module';
 import { DatabaseModule } from './database/database.module';
 import { ServiceRegistrationModule } from './service-registration/service-registration.module';
 import { MessageHandlerModule } from './message-handler/message-handler.module';
+import { DatabaseController } from './database/database.controller';
 
 @Module({
   imports: [
@@ -22,5 +23,6 @@ import { MessageHandlerModule } from './message-handler/message-handler.module';
       },
     ]),
   ],
+  controllers: [DatabaseController],
 })
 export class AppModule {}

@@ -19,7 +19,7 @@ try:
     from Backend.Redis.client import get_redis_client, test_redis_connection
 except ImportError:
     # Fallback to local Redis client if Backend module is not available
-    from app.redis.local_redis_client import get_redis_client, test_redis_connection
+    from .local_redis_client import get_redis_client, test_redis_connection
 
 # Import service mesh and registry
 try:

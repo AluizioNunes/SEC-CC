@@ -4,6 +4,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { RedisModule } from '../redis/redis.module';
 import { DatabaseService } from './database.service';
 import { User, UserSchema } from './schemas/user.schema';
+import { DatabaseController } from './database.controller';
+import { User as UserEntity } from './entities/user.entity';
 
 @Module({
   imports: [
@@ -18,12 +20,14 @@ import { User, UserSchema } from './schemas/user.schema';
       synchronize: true, // Only for development
       logging: false,
     }),
+    TypeOrmModule.forFeature([UserEntity]),
     MongooseModule.forRoot(
       process.env.MONGODB_URL || 'mongodb://mongodb:27017/secmongo'
     ),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     RedisModule,
   ],
+  controllers: [DatabaseController],
   providers: [DatabaseService],
   exports: [DatabaseService],
 })
