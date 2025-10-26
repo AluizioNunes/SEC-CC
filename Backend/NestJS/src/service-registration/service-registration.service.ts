@@ -13,10 +13,12 @@ export class ServiceRegistrationService implements OnModuleInit, OnModuleDestroy
     // Initialize Redis client
     this.redisClient = createClient({
       socket: {
-        host: process.env.REDIS_HOST || 'localhost',
+        host: process.env.REDIS_HOST || 'redis',
         port: parseInt(process.env.REDIS_PORT || '6379'),
+        connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT || '3000'),
+        reconnectStrategy: (retries) => Math.min(retries * 200, 2000),
       },
-      password: process.env.REDIS_PASSWORD || 'redispassword',
+      password: process.env.REDIS_PASSWORD || 'redispassword2024',
     });
 
     this.redisClient.on('error', (err: any) => {
@@ -29,20 +31,17 @@ export class ServiceRegistrationService implements OnModuleInit, OnModuleDestroy
   }
 
   async onModuleInit() {
-    try {
-      // Connect to Redis
-      await this.redisClient.connect();
-      
-      // Register service
-      await this.registerService();
-      
-      // Start heartbeat
-      this.startHeartbeat();
-      
-      console.log('✅ Service registration initialized');
-    } catch (error) {
-      console.error('❌ Service registration initialization failed:', error);
-    }
+    // Attempt Redis connection without blocking bootstrap
+    this.redisClient
+      .connect()
+      .then(async () => {
+        await this.registerService();
+        this.startHeartbeat();
+        console.log('✅ Service registration initialized');
+      })
+      .catch((error) => {
+        console.error('❌ Service registration initialization failed:', error);
+      });
   }
 
   async onModuleDestroy() {
@@ -51,13 +50,15 @@ export class ServiceRegistrationService implements OnModuleInit, OnModuleDestroy
       if (this.heartbeatInterval) {
         clearInterval(this.heartbeatInterval);
       }
-      
+
       // Unregister service
       await this.unregisterService();
-      
-      // Disconnect from Redis
-      await this.redisClient.quit();
-      
+
+      // Disconnect from Redis (only if open)
+      if (this.redisClient?.isOpen) {
+        await this.redisClient.quit();
+      }
+
       console.log('✅ Service unregistration completed');
     } catch (error) {
       console.error('❌ Service unregistration failed:', error);

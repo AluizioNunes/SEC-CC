@@ -55,12 +55,11 @@
     "cors": "^2.8.5",
 
     "winston": "^3.11.0",
-    "nestjs-winston": "^1.9.4",
+    "nest-winston": "^1.9.4",
     "@nestjs/terminus": "^10.2.3",
 
     "opentelemetry": "^0.1.0",
     "jaeger-client": "^3.19.0",
-    "@nestjs/opentelemetry": "^1.0.0",
 
     "prometheus-api-metrics": "^3.2.2"
   },
@@ -72,6 +71,7 @@
     "@types/jest": "^29.5.2",
     "@types/node": "^20.3.1",
     "@types/supertest": "^2.0.12",
+    "@types/compression": "^1.7.5",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.42.0",

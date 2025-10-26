@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException, Request, Depends, status, APIRouter
 from pydantic import BaseModel
 from datetime import datetime, timezone
 from .db_asyncpg import get_pool, init_pool
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import time
@@ -723,13 +723,13 @@ async def metrics():
         rate_limit_stats = rate_limiter.get_rate_limit_stats()
         postgres_stats = postgres_cache_manager.get_cache_stats()
         mongodb_stats = mongodb_cache_manager.get_cache_stats()
-        broker_stats = await hybrid_broker.get_message_stats()
-        event_stats = await event_sourcing_manager.get_event_stats()
+        broker_stats = await hybrid_broker.get_message_stats() if hybrid_broker is not None else {"queue_size": 0, "processing_rate": 0}
+        event_stats = await event_sourcing_manager.get_event_stats() if event_sourcing_manager is not None else {"processed_events": 0, "processing_latency": 0}
         prometheus_stats = prometheus_cache_manager.get_cache_stats()
-        global_mesh_stats = await global_service_mesh.get_global_mesh_analytics()
-        ai_stats = await ultra_ai_manager.get_ai_system_overview()
-        security_stats = await ultra_security_manager.get_comprehensive_security_report()
-        analytics_stats = await ultra_analytics_engine.get_business_intelligence_dashboard()
+        global_mesh_stats = await global_service_mesh.get_global_mesh_analytics() if global_service_mesh is not None else {"active_nodes": 0, "requests_processed": 0}
+        ai_stats = await ultra_ai_manager.get_ai_system_overview() if ultra_ai_manager is not None else {"model_accuracy": 0, "predictions_made": 0}
+        security_stats = await ultra_security_manager.get_comprehensive_security_report() if ultra_security_manager is not None else {"threats_detected": 0, "authentications": 0}
+        analytics_stats = await ultra_analytics_engine.get_business_intelligence_dashboard() if ultra_analytics_engine is not None else {"data_points_processed": 0, "insights_generated": 0}
         
         # Get current timestamp for business metrics
         current_time = int(time.time())
@@ -841,9 +841,9 @@ async def metrics():
             "application_version{version=\"4.0.0\"} 1",
         ]
         
-        return JSONResponse(content="\n".join(metrics_data), media_type="text/plain")
+        return PlainTextResponse("\n".join(metrics_data))
     except Exception as e:
-        return JSONResponse(content=f"# ERROR: {str(e)}", media_type="text/plain")
+        return PlainTextResponse(f"# ERROR: {str(e)}")
 
 
 @app.get("/demo")

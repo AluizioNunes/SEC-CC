@@ -9,16 +9,16 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 
 // Security imports
-import * as helmet from 'helmet';
-import * as compression from 'compression';
+import helmet from 'helmet'
+import * as compression from 'compression'
 import { ThrottlerModule } from '@nestjs/throttler';
 
 // Logging imports
-import { winstonModule } from 'nest-winston';
+import { WinstonModule } from 'nest-winston'
 import * as winston from 'winston';
 
 // Tracing imports
-import { JaegerTracer } from 'jaeger-client';
+import * as jaeger from 'jaeger-client'
 
 // CORS configuration
 import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
@@ -49,7 +49,7 @@ const corsOptions: CorsOptions = {
 };
 
 // winston logger configuration
-const logger = winstonModule.createLogger({
+const logger = WinstonModule.createLogger({
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(
@@ -57,14 +57,7 @@ const logger = winstonModule.createLogger({
         winston.format.errors({ stack: true }),
         winston.format.json(),
         winston.format.printf(({ timestamp, level, message, context, trace, ...meta }) => {
-          return JSON.stringify({
-            timestamp,
-            level,
-            message,
-            context,
-            trace,
-            ...meta,
-          });
+          return JSON.stringify({ timestamp, level, message, context, trace, ...meta });
         }),
       ),
     }),
@@ -100,9 +93,9 @@ const initJaegerTracer = () => {
       agentHost: process.env.JAEGER_AGENT_HOST || 'jaeger',
       agentPort: parseInt(process.env.JAEGER_AGENT_PORT || '6832'),
     },
-  };
+  } as any;
 
-  return JaegerTracer.initTracerFromConfig(config);
+  return jaeger.initTracer(config, {});
 };
 
 @Controller()
@@ -192,8 +185,35 @@ class AppController {
 @Module({
   imports: [
     ServiceRegistrationModule,
-    winstonModule.forRoot({
-      instance: logger,
+    WinstonModule.forRoot({
+      transports: [
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.errors({ stack: true }),
+            winston.format.json(),
+            winston.format.printf(({ timestamp, level, message, context, trace, ...meta }) => {
+              return JSON.stringify({ timestamp, level, message, context, trace, ...meta });
+            }),
+          ),
+        }),
+        new winston.transports.File({
+          filename: 'logs/error.log',
+          level: 'error',
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.errors({ stack: true }),
+            winston.format.json(),
+          ),
+        }),
+        new winston.transports.File({
+          filename: 'logs/combined.log',
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.json(),
+          ),
+        }),
+      ],
     }),
   ],
   controllers: [AppController],
@@ -231,10 +251,10 @@ async function bootstrap() {
       includeSubDomains: true,
       preload: true,
     },
-  }));
+  }))
 
   // Compression middleware
-  app.use(compression());
+  app.use(compression())
 
   // CORS configuration
   app.enableCors(corsOptions);

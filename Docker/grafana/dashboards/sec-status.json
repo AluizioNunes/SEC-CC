@@ -1,0 +1,54 @@
+{
+  "id": null,
+  "uid": "sec-status",
+  "title": "SEC Status",
+  "tags": ["sec", "status"],
+  "timezone": "browser",
+  "schemaVersion": 36,
+  "version": 1,
+  "refresh": "10s",
+  "time": {"from": "now-15m", "to": "now"},
+  "timepicker": {},
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "FastAPI Up",
+      "datasource": "Prometheus",
+      "targets": [
+        {"refId": "A", "expr": "up{job=\"fastapi\"}", "legendFormat": "fastapi"}
+      ],
+      "options": {
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "orientation": "horizontal"
+      },
+      "fieldConfig": {"defaults": {"unit": "none"}, "overrides": []},
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8}
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "NestJS Up",
+      "datasource": "Prometheus",
+      "targets": [
+        {"refId": "A", "expr": "up{job=\"nestjs\"}", "legendFormat": "nestjs"}
+      ],
+      "options": {
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "orientation": "horizontal"
+      },
+      "fieldConfig": {"defaults": {"unit": "none"}, "overrides": []},
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8}
+    },
+    {
+      "id": 3,
+      "type": "graph",
+      "title": "Scrape Duration (fastapi/nestjs)",
+      "datasource": "Prometheus",
+      "targets": [
+        {"refId": "A", "expr": "scrape_duration_seconds{job=~\"fastapi|nestjs\"}", "legendFormat": "{{job}}"}
+      ],
+      "gridPos": {"x": 0, "y": 8, "w": 24, "h": 10}
+    }
+  ]
+}

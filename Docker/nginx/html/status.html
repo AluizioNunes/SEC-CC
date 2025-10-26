@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Status do Sistema</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 2rem; }
+    h1 { margin: 0 0 1rem; font-size: 1.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .card { border: 1px solid #4444; border-radius: 8px; padding: 1rem; }
+    .name { font-weight: 600; margin-bottom: .5rem; }
+    .ok { color: #1f7; }
+    .bad { color: #f44; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    footer { margin-top: 2rem; font-size: .875rem; opacity: .8; }
+    ul { margin: .5rem 0 0; padding-left: 1.2rem; }
+  </style>
+</head>
+<body>
+  <h1>Status do Sistema</h1>
+  <div class="grid">
+    <div class="card" id="frontend">
+      <div class="name">Frontend</div>
+      <div class="status">Consultando…</div>
+      <ul class="details"></ul>
+    </div>
+    <div class="card" id="fastapi">
+      <div class="name">FastAPI (api/v1)</div>
+      <div class="status">Consultando…</div>
+      <ul class="details"></ul>
+    </div>
+    <div class="card" id="nestjs">
+      <div class="name">NestJS (api/v2)</div>
+      <div class="status">Consultando…</div>
+      <ul class="details"></ul>
+    </div>
+    <div class="card" id="redis">
+      <div class="name">Redis (via NestJS)</div>
+      <div class="status">Consultando…</div>
+      <ul class="details"></ul>
+    </div>
+  </div>
+
+  <footer>
+    Endpoints:
+    <ul>
+      <li><code>/api/v1/health/live</code> (FastAPI)</li>
+      <li><code>/api/v2/health</code> (NestJS)</li>
+      <li><code>/api/v2/redis-status</code> (NestJS → Redis)</li>
+      <li><code>/metrics</code> (NestJS), <code>/api/v1/metrics</code> (se FastAPI expor)</li>
+    </ul>
+  </footer>
+
+  <script>
+    async function check(url, okTest) {
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        const ct = (res.headers.get('content-type')||'').toLowerCase();
+        let data = null;
+        if (ct.includes('application/json')) data = await res.json();
+        else data = await res.text();
+        const ok = okTest ? okTest(res, data) : res.ok;
+        return { ok, res, data };
+      } catch (e) {
+        return { ok: false, error: String(e) };
+      }
+    }
+
+    function render(id, result, details = []) {
+      const el = document.getElementById(id);
+      const status = el.querySelector('.status');
+      const list = el.querySelector('.details');
+      status.textContent = result.ok ? 'OK' : 'Falhou';
+      status.className = 'status ' + (result.ok ? 'ok' : 'bad');
+      list.innerHTML = '';
+      for (const d of details) {
+        const li = document.createElement('li'); li.textContent = d; list.appendChild(li);
+      }
+    }
+
+    // Frontend: testar resposta HTML
+    check('/', (res, data) => res.ok && typeof data === 'string' && data.includes('<!doctype'))
+      .then(r => render('frontend', r, [r.ok ? `HTTP ${r.res.status}` : r.error || 'Erro']))
+      .catch(e => render('frontend', { ok: false, error: String(e) }));
+
+    // FastAPI health
+    check('/api/v1/health/live', (res, data) => res.ok)
+      .then(r => render('fastapi', r, [r.ok ? `HTTP ${r.res.status}` : r.error || 'Erro']))
+      .catch(e => render('fastapi', { ok: false, error: String(e) }));
+
+    // NestJS health
+    check('/api/v2/health', (res, data) => res.ok && data && data.status === 'ok')
+      .then(r => render('nestjs', r, [r.ok ? `HTTP ${r.res.status}` : r.error || 'Erro']))
+      .catch(e => render('nestjs', { ok: false, error: String(e) }));
+
+    // Redis via NestJS
+    check('/api/v2/redis-status', (res, data) => res.ok && data && data.status === 'connected')
+      .then(r => render('redis', r, r.ok ? [`host: ${r.data.host}`, `port: ${r.data.port}`] : [r.error || 'Erro']))
+      .catch(e => render('redis', { ok: false, error: String(e) }));
+  </script>
+</body>
+</html>
