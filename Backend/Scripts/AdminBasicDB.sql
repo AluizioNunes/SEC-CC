@@ -1040,7 +1040,7 @@ FROM SEC.Permissao
 ON CONFLICT DO NOTHING;
 
 -- Inserir usuário administrador padrão
--- Senha: 123456 (hash bcrypt)
+-- Senha: changeme123 (bcrypt $2b$, rounds=12)
 INSERT INTO SEC.Usuario (
     Nome, 
     Email, 
@@ -1049,18 +1049,20 @@ INSERT INTO SEC.Usuario (
     IdEmpresa,
     IdDepartamento,
     IdPerfilPrincipal,
+    Perfil,
     Ativo,
     PrimeiroAcesso,
     Cadastrante
 )
 VALUES (
-    'Administrador do Sistema',
-    'admin@sistema.com.br',
+    'ADMINISTRADOR DO SISTEMA',
+    'admin@cultura.am.gov.br',
     'admin',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    '$2b$12$53ynt3MWP2utN2ns88dFr.One6HvyGiveWeiZ4Aq821tByY5DqWpe',
     1,
     1,
     1,
+    'ADMINISTRADOR',
     TRUE,
     TRUE,
     'SYSTEM'
