@@ -206,7 +206,7 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
       - ./Services/Docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
       - ./Services/Docker/rabbitmq/definitions.template.json:/etc/rabbitmq/definitions.json.tpl:ro
-    command: ["/bin/bash","-lc","sed -e \"s/__RABBITMQ_ADMIN_USER__/$RABBITMQ_DEFAULT_USER/g\" -e \"s/__RABBITMQ_ADMIN_PASSWORD__/$RABBITMQ_DEFAULT_PASS/g\" -e \"s#__RABBITMQ_VHOST__#$RABBITMQ_VHOST#g\" /etc/rabbitmq/definitions.json.tpl > /etc/rabbitmq/definitions.json && rabbitmq-server"]
+    command: ["/bin/bash","-lc","sed -e \"s/__RABBITMQ_ADMIN_USER__/$$RABBITMQ_DEFAULT_USER/g\" -e \"s/__RABBITMQ_ADMIN_PASSWORD__/$$RABBITMQ_DEFAULT_PASS/g\" -e \"s#__RABBITMQ_VHOST__#$$RABBITMQ_VHOST#g\" /etc/rabbitmq/definitions.json.tpl > /etc/rabbitmq/definitions.json && rabbitmq-server"]
     networks:
       - sec_net
     restart: unless-stopped
@@ -215,6 +215,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 3
+      start_period: 30s
 
   # ========== POSTGRESQL DATABASE ==========
   postgres:
