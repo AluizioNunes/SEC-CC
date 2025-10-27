@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import time
 import asyncio
+import os
 from contextlib import asynccontextmanager
 import logging
 # Removed motor import to avoid startup ImportError

@@ -37,6 +37,7 @@ class DatabaseConnectionLogger implements OnModuleInit {
       username: process.env.POSTGRES_USER || 'sec',
       password: process.env.POSTGRES_PASSWORD || 'secpass',
       database: process.env.POSTGRES_DB || 'secdb',
+      schema: 'SEC', // Use the SEC schema as defined in AdminBasicDB.sql
       entities: [__dirname + '/entities/*.entity{.ts,.js}'],
       synchronize: true, // Only for development
       logging: false,
