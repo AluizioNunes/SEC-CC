@@ -59,6 +59,9 @@ from .redis import (
     EventType
 )
 
+# Import Auth router (modularized /auth endpoints)
+from .routes.auth_router import auth_router
+
 # Import service registration
 import sys
 import os
@@ -337,6 +340,8 @@ app.middleware("http")(request_logging_middleware)
 # Include Redis advanced features routers
 app.include_router(redis_router)
 app.include_router(advanced_demo_router)
+# Include Auth router
+app.include_router(auth_router)
 
 
 @app.get("/redis/test")
@@ -360,201 +365,14 @@ async def redis_test():
     return JSONResponse(status_code=503, content={"status": "unavailable"})
 
 
-@app.post("/auth/login")
-async def login(request: Request):
-    """Login validando usuário/e-mail e senha na tabela SEC.Usuario.
-    Aceita payload JSON: { "username": string, "password": string }.
-    O campo "username" pode ser usuário (Login) ou e-mail (Email).
-    """
-    try:
-        try:
-            body = await request.json()
-        except Exception:
-            raw = await request.body()
-            try:
-                import json
-                body = json.loads(raw.decode("utf-8"))
-            except Exception:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Corpo da requisição inválido")
-        identifier = body.get("username") or body.get("email") or body.get("usuario")
-        password = body.get("password")
-
-        if not identifier or not password:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Username/email e senha são obrigatórios"
-            )
-
-        # Buscar usuário na tabela SEC.Usuario
-        pool = await get_pool()
-        row = await pool.fetchrow(
-            'SELECT idusuario AS "IdUsuario", nome AS "Nome", email AS "Email", usuario AS "Login", senha AS "Senha", perfil AS "Perfil", permissao AS "Permissao" FROM SEC.Usuario WHERE usuario=$1 OR email=$1 LIMIT 1',
-            identifier
-        )
-
-        if not row:
-            audit_log(
-                action="unauthorized_access",
-                user_id=str(identifier),
-                resource="auth_system",
-                details={"reason": "user_not_found", "ip_address": request.client.host}
-            )
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
-
-        stored_password = row["Senha"]
-        valid_password = False
-        try:
-            if isinstance(stored_password, str) and stored_password.startswith("$2"):
-                # Senha armazenada como hash bcrypt - usar bcrypt.checkpw para compatibilidade
-                import bcrypt  # type: ignore
-                try:
-                    valid_password = bcrypt.checkpw(password.encode("utf-8"), stored_password.encode("utf-8"))
-                except Exception:
-                    # Fallback para passlib caso bcrypt falhe
-                    try:
-                        from .auth import pwd_context
-                        valid_password = pwd_context.verify(password, stored_password)
-                    except Exception:
-                        valid_password = False
-            else:
-                # Comparação direta (texto puro)
-                valid_password = (password == stored_password)
-        except Exception:
-            # Fallback para comparação direta se verificação falhar
-            valid_password = (password == stored_password)
-
-        if not valid_password:
-            audit_log(
-                action="unauthorized_access",
-                user_id=str(identifier),
-                resource="auth_system",
-                details={"reason": "invalid_password", "ip_address": request.client.host}
-            )
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
-
-        # Montar dados do token e resposta
-        username_value = row["Login"] or row["Email"] or str(row["IdUsuario"])  # preferir Login
-        role_value = row["Perfil"] or "user"
-
-        token_data = {"sub": str(row["IdUsuario"]), "username": username_value, "role": role_value}
-        access_token = create_access_token(token_data)
-        refresh_token = jwt_manager.create_refresh_token({"sub": str(row["IdUsuario"]), "role": role_value})
-
-        # Log de sucesso
-        audit_log(
-            action="login",
-            user_id=username_value,
-            resource="auth_system",
-            details={"ip_address": request.client.host}
-        )
-
-        return {
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer",
-            "expires_in": 1800,
-            "user": {
-                "id": row["IdUsuario"],
-                "name": row["Nome"],
-                "email": row["Email"],
-                "login": row["Login"],
-                "profile": role_value
-            }
-        }
-    except HTTPException:
-        raise
-    except ValueError:
-        # JSON malformado
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Corpo da requisição inválido")
-    except Exception as e:
-        audit_log(
-            action="system_error",
-            user_id=str(identifier if 'identifier' in locals() else 'unknown'),
-            resource="auth_system",
-            details={"error": str(e), "ip_address": getattr(request.client, 'host', 'unknown')}
-        )
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Erro interno do servidor")
 
 
-@app.post("/auth/refresh")
-async def refresh_token(request: Request, current_user: Dict[str, Any] = Depends(get_current_user)):
-    """Refresh access token"""
-    try:
-        body = await request.json()
-        refresh_token = body.get("refresh_token")
-
-        if not refresh_token:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Refresh token required"
-            )
-
-        # Verify refresh token
-        payload = jwt_manager.verify_token(refresh_token, "refresh")
-        if not payload:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid refresh token"
-            )
-
-        # Create new access token
-        token_data = {"sub": payload["sub"], "role": payload.get("role", "user")}
-        new_access_token = jwt_manager.create_access_token(token_data)
-
-        # Log token refresh
-        audit_log(
-            action="token_refresh",
-            user_id=payload["sub"],
-            resource="auth_system",
-            details={"ip_address": request.client.host}
-        )
-
-        return {
-            "access_token": new_access_token,
-            "token_type": "bearer",
-            "expires_in": 1800
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Token refresh error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
 
 
-@app.post("/auth/logout")
-async def logout(request: Request, current_user: Dict[str, Any] = Depends(require_auth)):
-    """Logout endpoint with audit logging"""
-    try:
-        # Log logout
-        audit_log(
-            action="logout",
-            user_id=current_user["sub"],
-            resource="auth_system",
-            details={"ip_address": request.client.host}
-        )
-
-        return {"message": "Successfully logged out"}
-
-    except Exception as e:
-        logger.error(f"Logout error: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
-        )
 
 
-@app.get("/auth/me")
-async def get_current_user_info(current_user: Dict[str, Any] = Depends(require_auth)):
-    """Get current user information"""
-    return {
-        "user_id": current_user["sub"],
-        "role": current_user.get("role", "user"),
-        "authenticated": True
-    }
+
+
 
 # Simple protected route for tests
 @app.get("/protected")
@@ -1101,14 +919,13 @@ class UsuarioUpdate(BaseModel):
 async def criar_usuario(payload: UsuarioCreate):
     pool = await get_pool()
     row = await pool.fetchrow(
-        'INSERT INTO SEC.Usuario (nome, perfil, permissao, email, usuario, senha, datacadastro, cadastrante, imagem) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao"',
+        'INSERT INTO SEC.Usuario (nome, perfil, permissao, email, usuario, senha, datacadastro, cadastrante, imagem) VALUES ($1,$2,$3,$4,$5,$6,CURRENT_TIMESTAMP,$7,$8) RETURNING idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao"',
         payload.Nome,
         payload.Perfil,
         payload.Permissao,
         payload.Email,
         payload.Login,
         payload.Senha,
-        datetime.now(timezone.utc),
         (payload.Cadastrante or 'API'),
         payload.Image,
     )
@@ -1122,7 +939,7 @@ async def atualizar_usuario(id: int, payload: UsuarioUpdate):
 
     # Mapear payload para colunas reais
     key_mapping = {"Login": "Usuario", "Image": "Imagem"}
-    allowed = {"Nome","Perfil","Permissao","Email","Usuario","Senha","Cadastrante","Imagem","DataUpdate"}
+    allowed = {"Nome","Perfil","Permissao","Email","Usuario","Senha","Cadastrante","Imagem"}
 
     mapped_data = {}
     for k, v in data.items():
@@ -1130,14 +947,16 @@ async def atualizar_usuario(id: int, payload: UsuarioUpdate):
         if db_col in allowed:
             mapped_data[db_col] = v
 
-    # Atualiza o timestamp
-    mapped_data["DataUpdate"] = datetime.now(timezone.utc)
+    # DataUpdate será atualizado via SQL (CURRENT_TIMESTAMP)
 
-    if len(mapped_data) == 1 and "DataUpdate" in mapped_data:
+    # Não aceitar DataUpdate do cliente; timestamp via SQL
+    if not mapped_data:
         raise HTTPException(status_code=400, detail="Nenhum campo válido para atualizar")
-
+    
     columns = list(mapped_data.keys())
     set_clause = ",".join([f'{col}=${i+1}' for i, col in enumerate(columns)])
+    # Adiciona DataUpdate server-side
+    set_clause = set_clause + ", DataUpdate=CURRENT_TIMESTAMP"
     values = [mapped_data[col] for col in columns]
 
     pool = await get_pool()

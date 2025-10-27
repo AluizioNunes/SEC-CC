@@ -1,3 +1,5 @@
+# NOTE: Router legado para o serviço em Backend/main.py.
+# O serviço FastAPI (app/main.py) usa app/routes/auth_router.py. Não remover sem revisar dependências.
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +10,8 @@ from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr
 from database import get_db
 from models import User
+from pydantic import BaseModel
+from typing import Optional
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -119,3 +123,37 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     if user is None:
         raise credentials_exception
     return user
+
+class ChangePasswordPayload(BaseModel):
+    new_password: str
+    current_password: Optional[str] = None
+    requested_by: Optional[str] = None
+
+@router.post("/auth/change-password")
+async def change_password(
+    payload: ChangePasswordPayload,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Altera a senha do usuário autenticado usando bcrypt e validação opcional da senha atual."""
+    # Validar tamanho máximo do bcrypt (72 bytes)
+    if len(payload.new_password.encode("utf-8")) > 72:
+        raise HTTPException(status_code=400, detail="Senha muito longa (limite: 72 bytes)")
+
+    # Verificar senha atual se fornecida
+    if payload.current_password is not None:
+        if not verify_password(payload.current_password, current_user.hashed_password):
+            raise HTTPException(status_code=401, detail="Senha atual incorreta")
+
+    # Atualizar senha
+    current_user.hashed_password = get_password_hash(payload.new_password)
+    # Opcional: atualizar campos de auditoria se existirem
+    try:
+        setattr(current_user, "updated_by", payload.requested_by or "API-PASSWORD-CHANGE")
+        setattr(current_user, "updated_at", datetime.utcnow())
+    except Exception:
+        pass
+
+    await db.commit()
+
+    return {"ok": True, "message": "Senha alterada com sucesso"}

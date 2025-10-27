@@ -79,6 +79,57 @@ class TestAuthentication:
         )
         assert response.status_code == 200
 
+    def test_change_password_requires_auth(self, client):
+        """Mudar senha sem token deve retornar 401"""
+        response = client.post(
+            "/auth/change-password",
+            json={"new_password": "TempPass123!"}
+        )
+        assert response.status_code == 401
+
+    def test_change_password_flow(self, client):
+        """Fluxo completo: login, mudar senha, login com nova senha e revert"""
+        # Login inicial com senha atual
+        login_response = client.post(
+            "/auth/login",
+            json={"username": "admin", "password": "changeme123"}
+        )
+        assert login_response.status_code == 200
+        token = login_response.json()["access_token"]
+
+        # Mudar senha
+        change_response = client.post(
+            "/auth/change-password",
+            json={"new_password": "TempPass123!", "requested_by": "TESTS"},
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        assert change_response.status_code == 200
+        data = change_response.json()
+        assert data.get("ok") is True
+
+        # Login com nova senha
+        login_new = client.post(
+            "/auth/login",
+            json={"username": "admin", "password": "TempPass123!"}
+        )
+        assert login_new.status_code == 200
+        token_new = login_new.json()["access_token"]
+
+        # Reverter senha para estado original (para manter testes idempotentes)
+        revert_response = client.post(
+            "/auth/change-password",
+            json={"new_password": "changeme123", "requested_by": "TESTS"},
+            headers={"Authorization": f"Bearer {token_new}"}
+        )
+        assert revert_response.status_code == 200
+        assert revert_response.json().get("ok") is True
+
+        # Validar login novamente com senha original
+        login_orig = client.post(
+            "/auth/login",
+            json={"username": "admin", "password": "changeme123"}
+        )
+        assert login_orig.status_code == 200
 # Security Tests
 class TestSecurity:
     """Test security features"""
