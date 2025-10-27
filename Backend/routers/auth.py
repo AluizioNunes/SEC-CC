@@ -12,6 +12,7 @@ from database import get_db
 from models import User
 from pydantic import BaseModel
 from typing import Optional
+import os
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -35,10 +36,10 @@ class UserResponse(BaseModel):
     user_type: str
     is_active: bool
 
-# Constants
-SECRET_KEY = "your-secret-key-change-in-production"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+# Constants from environment
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-me-in-env")
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)

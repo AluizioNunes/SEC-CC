@@ -10,9 +10,12 @@
 -- Reset schema para inicialização limpa (primeira execução)
 DROP SCHEMA IF EXISTS public CASCADE;
 DROP SCHEMA IF EXISTS SEC CASCADE;
-CREATE SCHEMA IF NOT EXISTS SEC AUTHORIZATION sec;
-ALTER ROLE sec SET search_path TO SEC;
+CREATE SCHEMA IF NOT EXISTS SEC AUTHORIZATION :POSTGRES_USER;
+ALTER ROLE :POSTGRES_USER SET search_path TO SEC;
 SET search_path TO SEC;
+
+-- Enable pgcrypto for bcrypt hashing
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- Remover o banco padrão 'postgres' (fora de transação)
 SELECT pg_terminate_backend(pid)
@@ -450,7 +453,7 @@ CREATE TABLE IF NOT EXISTS SEC.Usuario (
     IdEmpresa INTEGER REFERENCES SEC.Empresa(IdEmpresa),
     IdDepartamento INTEGER REFERENCES SEC.Departamento(IdDepartamento),
     Usuario VARCHAR(100) UNIQUE NOT NULL,
-    Senha VARCHAR(255) NOT NULL DEFAULT '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', -- Hash bcrypt de '123456'
+    Senha VARCHAR(255) NOT NULL DEFAULT crypt(:'DEFAULT_USER_PASSWORD', gen_salt('bf', 12)), -- Hash bcrypt gerado via pgcrypto a partir de DEFAULT_USER_PASSWORD
     TipoAutenticacao VARCHAR(20) DEFAULT 'LOCAL' CHECK (TipoAutenticacao IN ('LOCAL', 'GOOGLE', 'MICROSOFT', 'INSTAGRAM', 'FACEBOOK', 'OUTROS')),
     IdPerfilPrincipal INTEGER REFERENCES SEC.Perfil(IdPerfil),
     Perfil VARCHAR(100),
@@ -1041,6 +1044,14 @@ ON CONFLICT DO NOTHING;
 
 -- Inserir usuário administrador padrão
 -- Senha: changeme123 (bcrypt $2b$, rounds=12)
+-- Inserir usuário administrador padrão parametrizado via .env
+WITH admin_perfil AS (
+    SELECT IdPerfil FROM SEC.Perfil WHERE NomePerfil = 'ADMINISTRADOR' LIMIT 1
+), empresa AS (
+    SELECT IdEmpresa FROM SEC.Empresa ORDER BY IdEmpresa LIMIT 1
+), departamento AS (
+    SELECT IdDepartamento FROM SEC.Departamento ORDER BY IdDepartamento LIMIT 1
+)
 INSERT INTO SEC.Usuario (
     Nome, 
     Email, 
@@ -1054,24 +1065,26 @@ INSERT INTO SEC.Usuario (
     PrimeiroAcesso,
     Cadastrante
 )
-VALUES (
-    'ADMINISTRADOR DO SISTEMA',
-    'admin@cultura.am.gov.br',
-    'admin',
-    '$2b$12$53ynt3MWP2utN2ns88dFr.One6HvyGiveWeiZ4Aq821tByY5DqWpe',
-    1,
-    1,
-    1,
+SELECT
+    :'ADMIN_NAME',
+    :'ADMIN_EMAIL',
+    :'ADMIN_USERNAME',
+    crypt(:'ADMIN_PASSWORD', gen_salt('bf', 12)),
+    (SELECT IdEmpresa FROM empresa),
+    (SELECT IdDepartamento FROM departamento),
+    (SELECT IdPerfil FROM admin_perfil),
     'ADMINISTRADOR',
     TRUE,
     TRUE,
-    'SYSTEM'
-)
+    :'CADASTRANTE_SYSTEM'
 ON CONFLICT DO NOTHING;
 
--- Associar perfil ao usuário administrador
+-- Associar perfil ao usuário administrador usando seleção por username
 INSERT INTO SEC.UsuarioPerfil (IdUsuario, IdPerfil, Cadastrante)
-VALUES (1, 1, 'SYSTEM')
+SELECT u.IdUsuario, p.IdPerfil, :'CADASTRANTE_SYSTEM'
+FROM SEC.Usuario u
+JOIN SEC.Perfil p ON p.NomePerfil = 'ADMINISTRADOR'
+WHERE u.Usuario = :'ADMIN_USERNAME'
 ON CONFLICT DO NOTHING;
 
 -- =====================================================
