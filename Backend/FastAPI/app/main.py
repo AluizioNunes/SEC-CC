@@ -18,7 +18,9 @@ import logging
 # Removed motor import to avoid startup ImportError
 # from motor.motor_asyncio import AsyncIOMotorClient
 logger = logging.getLogger("sec-fastapi")
-logger.setLevel(logging.INFO)
+# Read log level from environment (FASTAPI_LOG_LEVEL) with fallback to INFO
+_log_level = os.getenv("FASTAPI_LOG_LEVEL", "info").upper()
+logger.setLevel(getattr(logging, _log_level, logging.INFO))
 
 # Import security modules
 from .auth import (
@@ -318,15 +320,26 @@ async def security_middleware(request: Request, call_next):
 
         raise
 
-# Configure CORS with strict settings
+# Configure CORS with strict settings (from env CORS_ORIGINS if provided)
+_cors_origins_str = os.getenv("CORS_ORIGINS")
+if _cors_origins_str:
+    _cors_origins = [o.strip() for o in _cors_origins_str.split(",") if o.strip()]
+else:
+    _cors_origins = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://yourdomain.com",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", "https://yourdomain.com"],  # Dev: incluir Vite 5174
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
     expose_headers=["X-Total-Count", "X-Page-Count"],
-    max_age=86400,  # Cache preflight for 24 hours
+    max_age=86400,
 )
 
 # Trusted hosts middleware (configure for production)

@@ -1,20 +1,20 @@
 {
   "users": [
     {
-      "name": "admin",
-      "password": "secure_password_change_me",
+      "name": "__RABBITMQ_ADMIN_USER__",
+      "password": "__RABBITMQ_ADMIN_PASSWORD__",
       "tags": "administrator"
     }
   ],
   "vhosts": [
     {
-      "name": "/"
+      "name": "__RABBITMQ_VHOST__"
     }
   ],
   "permissions": [
     {
-      "user": "admin",
-      "vhost": "/",
+      "user": "__RABBITMQ_ADMIN_USER__",
+      "vhost": "__RABBITMQ_VHOST__",
       "configure": ".*",
       "write": ".*",
       "read": ".*"
@@ -23,14 +23,14 @@
   "queues": [
     {
       "name": "default",
-      "vhost": "/",
+      "vhost": "__RABBITMQ_VHOST__",
       "durable": true
     }
   ],
   "exchanges": [
     {
       "name": "sec_cc_exchange",
-      "vhost": "/",
+      "vhost": "__RABBITMQ_VHOST__",
       "type": "direct",
       "durable": true
     }
@@ -38,7 +38,7 @@
   "bindings": [
     {
       "source": "sec_cc_exchange",
-      "vhost": "/",
+      "vhost": "__RABBITMQ_VHOST__",
       "destination": "default",
       "destination_type": "queue",
       "routing_key": "default"

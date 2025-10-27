@@ -2,7 +2,13 @@
 -- Objetivo: aplicar hash bcrypt moderno ($2b$) com controle transacional
 -- e auditoria mínima, garantindo compatibilidade com triggers existentes.
 
--- Uso: psql -U <user> -d SEC -f AdminResetPassword.sql
+-- Uso:
+-- docker compose exec -T postgres \
+--   psql -U $POSTGRES_USER -d $POSTGRES_DB \
+--   -v ADMIN_USERNAME="$ADMIN_USERNAME" \
+--   -v ADMIN_RESET_PASSWORD="$ADMIN_RESET_PASSWORD" \
+--   -v CADASTRANTE_SYSTEM="$CADASTRANTE_SYSTEM" \
+--   -f /docker-entrypoint-initdb.d/AdminResetPassword.sql
 
 BEGIN;
 
@@ -14,10 +20,10 @@ ALTER TABLE SEC.Usuario DISABLE TRIGGER ALL;
 -- Para alterar o valor, substitua pelo novo hash $2b$ (12 rounds recomendado)
 UPDATE SEC.Usuario
 SET 
-  Senha = $$2b$12$en5BUlx3pv6a/04OeNy4Eebf9R.cXjePfHjb2Xrin8YKCN3thtOiO$$,
-  CadastranteUpdate = 'RESET_SCRIPT',
+  Senha = crypt(:'ADMIN_RESET_PASSWORD', gen_salt('bf', 12)),
+  CadastranteUpdate = :'CADASTRANTE_SYSTEM',
   DataUpdate = CURRENT_TIMESTAMP
-WHERE Usuario = 'admin';
+WHERE Usuario = :'ADMIN_USERNAME';
 
 -- Reabilita triggers
 ALTER TABLE SEC.Usuario ENABLE TRIGGER ALL;
