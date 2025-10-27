@@ -8,10 +8,17 @@
 -- CREATE DATABASE SEC WITH ENCODING 'UTF8';
 
 -- Reset schema para inicialização limpa (primeira execução)
+DROP SCHEMA IF EXISTS public CASCADE;
 DROP SCHEMA IF EXISTS SEC CASCADE;
 CREATE SCHEMA IF NOT EXISTS SEC AUTHORIZATION sec;
 ALTER ROLE sec SET search_path TO SEC;
 SET search_path TO SEC;
+
+-- Remover o banco padrão 'postgres' (fora de transação)
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE datname = 'postgres' AND pid <> pg_backend_pid();
+DROP DATABASE IF EXISTS postgres;
 
 -- =====================================================
 -- FUNÇÕES DE VALIDAÇÃO
@@ -446,6 +453,8 @@ CREATE TABLE IF NOT EXISTS SEC.Usuario (
     Senha VARCHAR(255) NOT NULL DEFAULT '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', -- Hash bcrypt de '123456'
     TipoAutenticacao VARCHAR(20) DEFAULT 'LOCAL' CHECK (TipoAutenticacao IN ('LOCAL', 'GOOGLE', 'MICROSOFT', 'INSTAGRAM', 'FACEBOOK', 'OUTROS')),
     IdPerfilPrincipal INTEGER REFERENCES SEC.Perfil(IdPerfil),
+    Perfil VARCHAR(100),
+    Permissao TEXT,
     Imagem VARCHAR(500),
     Ativo BOOLEAN DEFAULT TRUE,
     PrimeiroAcesso BOOLEAN DEFAULT TRUE,
@@ -982,6 +991,8 @@ FROM SEC.Departamento d
 LEFT JOIN SEC.Empresa e ON d.IdEmpresa = e.IdEmpresa
 WHERE d.DeletadoLogico = FALSE;
 
+-- Compat: view SEC.Usuarios removida. Utilize diretamente a tabela SEC.Usuario.
+
 -- =====================================================
 -- DADOS INICIAIS (SEED)
 -- =====================================================
@@ -1402,9 +1413,6 @@ FROM information_schema.tables t
 WHERE table_schema = 'sec' 
 AND table_type = 'BASE TABLE'
 ORDER BY table_name;
-
--- Remover schema public conforme solicitado
-DROP SCHEMA IF EXISTS public CASCADE;
 
 
 

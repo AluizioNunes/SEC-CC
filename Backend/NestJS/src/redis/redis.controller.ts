@@ -95,6 +95,12 @@ export class RedisController {
     return { collection: body.collection, result, cached: true };
   }
 
+  @Get('mongodb/ping')
+  async mongodbPing() {
+    const res = await this.mongodbCacheService.mongoPing();
+    return { ping: res };
+  }
+
   @Post('mongodb/find')
   async mongodbFind(@Body() body: {
     collection: string;

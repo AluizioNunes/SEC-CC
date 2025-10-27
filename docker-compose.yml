@@ -118,12 +118,12 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=redispassword2024
-      - DATABASE_URL=postgresql+asyncpg://sec:secpass2024@postgres:5432/secdb
+      - DATABASE_URL=postgresql+asyncpg://sec:secpass2024@postgres:5432/SEC
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_USER=sec
       - POSTGRES_PASSWORD=secpass2024
-      - POSTGRES_DB=secdb
+      - POSTGRES_DB=SEC
       - MONGODB_URL=mongodb://mongodb:27017/secmongo
     healthcheck:
       test: ["CMD-SHELL", "python - <<'PY'\nimport sys, urllib.request\ntry:\n    with urllib.request.urlopen('http://localhost:8000/health/live', timeout=5) as r:\n        sys.exit(0 if r.status == 200 else 1)\nexcept Exception:\n    sys.exit(1)\nPY"]
@@ -142,9 +142,6 @@ services:
       - "3000:3000"
     networks:
       - sec_net
-    # depends_on removido para evitar conflito de container name com serviços já existentes
-    # NestJS assume que os serviços estão acessíveis pelos hostnames na rede
-
     environment:
       - PORT=3000
       - REDIS_HOST=redis
@@ -154,10 +151,18 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_USER=sec
       - POSTGRES_PASSWORD=secpass2024
-      - POSTGRES_DB=secdb
+      - POSTGRES_DB=SEC
       - MONGODB_HOST=mongodb
+      - MONGODB_DB=secmongo
+      - MONGODB_USER=secmongo
+      - MONGODB_PASSWORD=mongopass2024
+      - MONGODB_AUTH_SOURCE=admin
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=admin
+      - RABBITMQ_PASSWORD=admin123
     healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:3000/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health > /dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -206,16 +211,17 @@ services:
     environment:
       POSTGRES_USER: sec
       POSTGRES_PASSWORD: secpass2024
-      POSTGRES_DB: secdb
+      POSTGRES_DB: SEC
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./Backend/Scripts:/docker-entrypoint-initdb.d:ro
     ports:
       - "5432:5432"
     networks:
       - sec_net
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sec -d secdb"]
+      test: ["CMD-SHELL", "pg_isready -U sec -d SEC"]
       interval: 15s
       timeout: 5s
       retries: 3

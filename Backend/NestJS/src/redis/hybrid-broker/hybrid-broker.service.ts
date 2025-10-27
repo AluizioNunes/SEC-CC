@@ -2,7 +2,7 @@
  * Hybrid Message Broker for NestJS
  * RabbitMQ + Redis Streams integration
  */
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import * as amqp from 'amqplib';
@@ -21,7 +21,7 @@ export enum MessageBrokerType {
 }
 
 @Injectable()
-export class HybridBrokerService implements OnModuleDestroy {
+export class HybridBrokerService implements OnModuleInit, OnModuleDestroy {
   private rabbitmqConnection: any = null;
   private rabbitmqChannel: any = null;
   private readonly redisStreamsPrefix = 'nestjs_messages';
@@ -34,10 +34,20 @@ export class HybridBrokerService implements OnModuleDestroy {
     }
   }
 
+  async onModuleInit() {
+    await this.initialize();
+  }
+
   async initialize() {
     try {
-      // Initialize RabbitMQ connection
-      this.rabbitmqConnection = await amqp.connect('amqp://admin:admin123@rabbitmq:5672/');
+      // Initialize RabbitMQ connection using env vars with sensible defaults
+      const rmqUser = process.env.RABBITMQ_USER || 'admin';
+      const rmqPass = process.env.RABBITMQ_PASSWORD || 'admin123';
+      const rmqHost = process.env.RABBITMQ_HOST || 'rabbitmq';
+      const rmqPort = process.env.RABBITMQ_PORT || '5672';
+      const rmqUrl = process.env.RABBITMQ_URL || `amqp://${rmqUser}:${rmqPass}@${rmqHost}:${rmqPort}/`;
+
+      this.rabbitmqConnection = await amqp.connect(rmqUrl);
       if (this.rabbitmqConnection) {
         this.rabbitmqChannel = await this.rabbitmqConnection.createChannel();
 
@@ -70,8 +80,8 @@ export class HybridBrokerService implements OnModuleDestroy {
     };
 
     if (brokerType === MessageBrokerType.REDIS || brokerType === MessageBrokerType.HYBRID) {
-      // Publish to Redis Streams
-      await this.redis.xadd(`${this.redisStreamsPrefix}:${routingKey}`, '*', JSON.stringify(enrichedMessage));
+      // Publish to Redis Streams (field-value pairs required)
+      await this.redis.xadd(`${this.redisStreamsPrefix}:${routingKey}`, '*', 'payload', JSON.stringify(enrichedMessage));
     }
 
     if (brokerType === MessageBrokerType.RABBITMQ || brokerType === MessageBrokerType.HYBRID) {

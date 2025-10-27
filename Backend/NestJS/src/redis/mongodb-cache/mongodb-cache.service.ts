@@ -4,77 +4,103 @@
  */
 import { Injectable } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
+import { InjectConnection } from '@nestjs/mongoose';
 import Redis from 'ioredis';
+import mongoose, { Connection } from 'mongoose';
 
 @Injectable()
 export class MongodbCacheService {
-  constructor(@InjectRedis() private readonly redis: Redis) {}
+  constructor(
+    @InjectRedis() private readonly redis: Redis,
+    @InjectConnection() private readonly mongooseConn: Connection,
+  ) {}
+
+  private dbConn: Connection | null = null;
+
+  private async ensureMongoConnected(): Promise<void> {
+    const dbName = process.env.MONGODB_DB || 'secmongo';
+
+    // Wait until the Nest-managed Mongoose connection is ready
+    const timeoutMs = 5000;
+    const start = Date.now();
+    while (this.mongooseConn.readyState !== 1) {
+      if (Date.now() - start > timeoutMs) {
+        throw new Error('MongoDB not connected (timeout waiting for MongooseModule connection)');
+      }
+      await new Promise((r) => setTimeout(r, 100));
+    }
+
+    this.dbConn = this.mongooseConn.useDb(dbName);
+  }
+
+  private async executeAggregation<T>(collection: string, pipeline: any[]): Promise<T[]> {
+    await this.ensureMongoConnected();
+    const db = (this.dbConn || this.mongooseConn).db;
+    if (!db) throw new Error('MongoDB connection not initialized');
+    const col = db.collection(collection);
+    const cursor = col.aggregate(pipeline, { allowDiskUse: true });
+    const result = await cursor.toArray();
+    return result as T[];
+  }
+
+  private async executeFindOne<T>(collection: string, query: any): Promise<T | null> {
+    await this.ensureMongoConnected();
+    const db = (this.dbConn || this.mongooseConn).db;
+    if (!db) throw new Error('MongoDB connection not initialized');
+    const col = db.collection(collection);
+    const doc = await col.findOne(query);
+    return (doc as unknown as T) || null;
+  }
+
+  async mongoPing(): Promise<any> {
+    await this.ensureMongoConnected();
+    const db = (this.dbConn || this.mongooseConn).db;
+    if (!db) throw new Error('MongoDB connection not initialized');
+    const admin = db.admin();
+    const res = await admin.command({ ping: 1 });
+    return res;
+  }
 
   async cachedAggregation<T>(
     collection: string,
     pipeline: any[],
-    options: {
-      ttl?: number;
-      key?: string;
-    } = {}
+    options: { ttl?: number; key?: string } = {}
   ): Promise<T[]> {
     const { ttl = 600, key } = options;
-
-    // Generate cache key
     const cacheKey = key || this.generateAggregationKey(collection, pipeline);
-
-    // Check cache first
     const cached = await this.redis.get(cacheKey);
     if (cached) {
       return JSON.parse(cached);
     }
-
-    // Execute aggregation (placeholder - would use actual MongoDB driver)
     const result = await this.executeAggregation<T>(collection, pipeline);
-
-    // Cache result
     await this.redis.setex(cacheKey, ttl, JSON.stringify(result));
-
     return result;
   }
 
   async cachedFindOne<T>(
     collection: string,
     query: any,
-    options: {
-      ttl?: number;
-      key?: string;
-    } = {}
+    options: { ttl?: number; key?: string } = {}
   ): Promise<T | null> {
     const { ttl = 300, key } = options;
-
-    // Generate cache key
     const cacheKey = key || this.generateQueryKey(collection, query);
-
-    // Check cache first
     const cached = await this.redis.get(cacheKey);
     if (cached) {
       return JSON.parse(cached);
     }
-
-    // Execute findOne (placeholder)
     const result = await this.executeFindOne<T>(collection, query);
-
     if (result) {
       await this.redis.setex(cacheKey, ttl, JSON.stringify(result));
     }
-
     return result;
   }
 
   async invalidateCollectionCache(collection: string): Promise<number> {
     const pattern = `mongodb:collection:${collection}:*`;
     const keys = await this.redis.keys(pattern);
-
     if (keys.length > 0) {
       await this.redis.del(...keys);
     }
-
     return keys.length;
   }
 
@@ -88,17 +114,5 @@ export class MongodbCacheService {
     const keyData = { collection, query: JSON.stringify(query) };
     const keyString = JSON.stringify(keyData);
     return `mongodb:query:${Buffer.from(keyString).toString('base64')}`;
-  }
-
-  private async executeAggregation<T>(collection: string, pipeline: any[]): Promise<T[]> {
-    // Placeholder for actual MongoDB aggregation
-    // In real implementation, this would use MongoDB driver
-    return [];
-  }
-
-  private async executeFindOne<T>(collection: string, query: any): Promise<T | null> {
-    // Placeholder for actual MongoDB findOne
-    // In real implementation, this would use MongoDB driver
-    return null;
   }
 }

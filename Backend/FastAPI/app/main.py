@@ -362,12 +362,20 @@ async def redis_test():
 
 @app.post("/auth/login")
 async def login(request: Request):
-    """Login validando usuário/e-mail e senha na tabela SEC.Usuarios.
+    """Login validando usuário/e-mail e senha na tabela SEC.Usuario.
     Aceita payload JSON: { "username": string, "password": string }.
     O campo "username" pode ser usuário (Login) ou e-mail (Email).
     """
     try:
-        body = await request.json()
+        try:
+            body = await request.json()
+        except Exception:
+            raw = await request.body()
+            try:
+                import json
+                body = json.loads(raw.decode("utf-8"))
+            except Exception:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Corpo da requisição inválido")
         identifier = body.get("username") or body.get("email") or body.get("usuario")
         password = body.get("password")
 
@@ -377,10 +385,10 @@ async def login(request: Request):
                 detail="Username/email e senha são obrigatórios"
             )
 
-        # Buscar usuário na tabela SEC.Usuarios
+        # Buscar usuário na tabela SEC.Usuario
         pool = await get_pool()
         row = await pool.fetchrow(
-            'SELECT "IdUsuario","Nome","Email","Login","Senha","Perfil","Permissao" FROM "SEC"."Usuarios" WHERE "Login"=$1 OR "Email"=$1 LIMIT 1',
+            'SELECT idusuario AS "IdUsuario", nome AS "Nome", email AS "Email", usuario AS "Login", senha AS "Senha", perfil AS "Perfil", permissao AS "Permissao" FROM SEC.Usuario WHERE usuario=$1 OR email=$1 LIMIT 1',
             identifier
         )
 
@@ -396,10 +404,18 @@ async def login(request: Request):
         stored_password = row["Senha"]
         valid_password = False
         try:
-            from .auth import pwd_context
             if isinstance(stored_password, str) and stored_password.startswith("$2"):
-                # Senha armazenada como hash bcrypt
-                valid_password = pwd_context.verify(password, stored_password)
+                # Senha armazenada como hash bcrypt - usar bcrypt.checkpw para compatibilidade
+                import bcrypt  # type: ignore
+                try:
+                    valid_password = bcrypt.checkpw(password.encode("utf-8"), stored_password.encode("utf-8"))
+                except Exception:
+                    # Fallback para passlib caso bcrypt falhe
+                    try:
+                        from .auth import pwd_context
+                        valid_password = pwd_context.verify(password, stored_password)
+                    except Exception:
+                        valid_password = False
             else:
                 # Comparação direta (texto puro)
                 valid_password = (password == stored_password)
@@ -1039,13 +1055,13 @@ def row_to_dict(row) -> dict:
 @usuarios_router.get("/", response_model=List[UsuarioOut])
 async def listar_usuarios():
     pool = await get_pool()
-    rows = await pool.fetch('SELECT "IdUsuario","Nome","Funcao","Departamento","Lotacao","Perfil","Permissao","Email","Login","Senha","DataCadastro","Cadastrante","Image","DataUpdate","TipoUpdate","Observacao" FROM "SEC"."Usuarios" ORDER BY "IdUsuario" ASC')
+    rows = await pool.fetch('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM SEC.Usuario ORDER BY idusuario ASC')
     return [row_to_dict(r) for r in rows]
 
 @usuarios_router.get("/{id}", response_model=UsuarioOut)
 async def obter_usuario(id: int):
     pool = await get_pool()
-    row = await pool.fetchrow('SELECT "IdUsuario","Nome","Funcao","Departamento","Lotacao","Perfil","Permissao","Email","Login","Senha","DataCadastro","Cadastrante","Image","DataUpdate","TipoUpdate","Observacao" FROM "SEC"."Usuarios" WHERE "IdUsuario"=$1', id)
+    row = await pool.fetchrow('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM SEC.Usuario WHERE idusuario=$1', id)
     if not row:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     return row_to_dict(row)
@@ -1085,42 +1101,48 @@ class UsuarioUpdate(BaseModel):
 async def criar_usuario(payload: UsuarioCreate):
     pool = await get_pool()
     row = await pool.fetchrow(
-        'INSERT INTO "SEC"."Usuarios" ("Nome","Funcao","Departamento","Lotacao","Perfil","Permissao","Email","Login","Senha","DataCadastro","Cadastrante","Image","TipoUpdate","Observacao") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING "IdUsuario","Nome","Funcao","Departamento","Lotacao","Perfil","Permissao","Email","Login","Senha","DataCadastro","Cadastrante","Image","DataUpdate","TipoUpdate","Observacao"',
+        'INSERT INTO SEC.Usuario (nome, perfil, permissao, email, usuario, senha, datacadastro, cadastrante, imagem) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao"',
         payload.Nome,
-        payload.Funcao,
-        payload.Departamento,
-        payload.Lotacao,
         payload.Perfil,
         payload.Permissao,
         payload.Email,
         payload.Login,
         payload.Senha,
         datetime.now(timezone.utc),
-        payload.Cadastrante,
+        (payload.Cadastrante or 'API'),
         payload.Image,
-        payload.TipoUpdate,
-        payload.Observacao,
     )
     return row_to_dict(row)
 
 @usuarios_router.put("/{id}", response_model=UsuarioOut)
 async def atualizar_usuario(id: int, payload: UsuarioUpdate):
-    # Construir UPDATE dinâmico via asyncpg
     data = payload.dict(exclude_unset=True)
     if not data:
         raise HTTPException(status_code=400, detail="Nenhum campo para atualizar")
 
-    # Atualiza o timestamp
-    data["DataUpdate"] = datetime.now(timezone.utc)
+    # Mapear payload para colunas reais
+    key_mapping = {"Login": "Usuario", "Image": "Imagem"}
+    allowed = {"Nome","Perfil","Permissao","Email","Usuario","Senha","Cadastrante","Imagem","DataUpdate"}
 
-    # Monta SET com placeholders $1, $2, ... e valores
-    columns = list(data.keys())
-    set_clause = ",".join([f'"{col}"=${i+1}' for i, col in enumerate(columns)])
-    values = [data[col] for col in columns]
+    mapped_data = {}
+    for k, v in data.items():
+        db_col = key_mapping.get(k, k)
+        if db_col in allowed:
+            mapped_data[db_col] = v
+
+    # Atualiza o timestamp
+    mapped_data["DataUpdate"] = datetime.now(timezone.utc)
+
+    if len(mapped_data) == 1 and "DataUpdate" in mapped_data:
+        raise HTTPException(status_code=400, detail="Nenhum campo válido para atualizar")
+
+    columns = list(mapped_data.keys())
+    set_clause = ",".join([f'{col}=${i+1}' for i, col in enumerate(columns)])
+    values = [mapped_data[col] for col in columns]
 
     pool = await get_pool()
     row = await pool.fetchrow(
-        f'UPDATE "SEC"."Usuarios" SET {set_clause} WHERE "IdUsuario"=${len(columns)+1} RETURNING "IdUsuario","Nome","Funcao","Departamento","Lotacao","Perfil","Permissao","Email","Login","Senha","DataCadastro","Cadastrante","Image","DataUpdate","TipoUpdate","Observacao"',
+        f'UPDATE SEC.Usuario SET {set_clause} WHERE idusuario=${len(columns)+1} RETURNING idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao"',
         *values,
         id,
     )
@@ -1134,9 +1156,39 @@ async def atualizar_usuario(id: int, payload: UsuarioUpdate):
 async def remover_usuario(id: int):
     # Remove via asyncpg e valida existência
     pool = await get_pool()
-    row = await pool.fetchrow('DELETE FROM "SEC"."Usuarios" WHERE "IdUsuario"=$1 RETURNING "IdUsuario"', id)
+    row = await pool.fetchrow('DELETE FROM SEC.Usuario WHERE idusuario=$1 RETURNING idusuario', id)
     if not row:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    return {"ok": True}
+
+# Endpoint seguro para alteração de senha (gera hash $2b$)
+from pydantic import BaseModel
+class PasswordChange(BaseModel):
+    new_password: str
+    requested_by: Optional[str] = None
+
+@usuarios_router.post("/{id}/password", response_model=OperationResult)
+async def alterar_senha_usuario(id: int, payload: PasswordChange):
+    # Rejeitar senhas acima de 72 bytes (limite do bcrypt)
+    if len(payload.new_password.encode("utf-8")) > 72:
+        raise HTTPException(status_code=400, detail="Senha muito longa (limite: 72 bytes)")
+
+    import bcrypt
+    salt = bcrypt.gensalt(rounds=12)
+    hashed = bcrypt.hashpw(payload.new_password.encode("utf-8"), salt).decode("utf-8")  # $2b$
+
+    # Atualiza senha e popula campos de auditoria
+    pool = await get_pool()
+    row = await pool.fetchrow(
+        'UPDATE SEC.Usuario SET Senha=$1, CadastranteUpdate=$2, DataUpdate=CURRENT_TIMESTAMP WHERE idusuario=$3 RETURNING idusuario',
+        hashed,
+        (payload.requested_by or 'API-PASSWORD-CHANGE'),
+        id,
+    )
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
     return {"ok": True}
 
 # Registrar router
