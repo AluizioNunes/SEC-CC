@@ -199,9 +199,9 @@ services:
     ports:
       - "5672:5672"
     environment:
-      - RABBITMQ_DEFAULT_USER=${RABBITMQ_ADMIN_USER}
-      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_ADMIN_PASSWORD}
-      - RABBITMQ_VHOST=${RABBITMQ_VHOST}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_ADMIN_USER:-admin}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_ADMIN_PASSWORD:-123456}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST:-/}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
       - ./Services/Docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
@@ -214,8 +214,8 @@ services:
       test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
       interval: 15s
       timeout: 5s
-      retries: 3
-      start_period: 30s
+      retries: 5
+      start_period: 60s
 
   # ========== POSTGRESQL DATABASE ==========
   postgres:
