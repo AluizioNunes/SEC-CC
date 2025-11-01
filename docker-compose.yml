@@ -48,12 +48,16 @@ services:
             }
 
             location /api/v2/ {
-                rewrite ^/api/v2/(.*)$$ /$$1 break;
                 proxy_pass http://$$nestjs_upstream;
                 proxy_set_header Host $$host;
                 proxy_set_header X-Real-IP $$remote_addr;
                 proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
                 proxy_set_header X-Forwarded-Proto $$scheme;
+                proxy_http_version 1.1;
+                proxy_set_header Connection "";
+                proxy_buffering off;
+                proxy_cache off;
+                proxy_read_timeout 3600s;
             }
 
             location /n8n/ {
@@ -131,10 +135,10 @@ services:
       - PORT=8000
       - FASTAPI_LOG_LEVEL=${FASTAPI_LOG_LEVEL}
       - CORS_ORIGINS=${CORS_ORIGINS}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - JWT_ALGORITHM=${JWT_ALGORITHM}
-      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=${JWT_ACCESS_TOKEN_EXPIRE_MINUTES}
-      - JWT_REFRESH_TOKEN_EXPIRE_DAYS=${JWT_REFRESH_TOKEN_EXPIRE_DAYS}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-admin}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      - JWT_REFRESH_TOKEN_EXPIRE_DAYS=${JWT_REFRESH_TOKEN_EXPIRE_DAYS:-7}
       - REDIS_URL=${REDIS_URL}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
@@ -145,6 +149,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_SCHEMA=${POSTGRES_SCHEMA}
       - MONGODB_URL=${MONGODB_URL}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
@@ -181,6 +186,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_SCHEMA=${POSTGRES_SCHEMA}
       - MONGODB_HOST=${MONGODB_HOST}
       - MONGODB_DB=${MONGODB_DB}
       - MONGODB_USER=${MONGODB_USER}
@@ -190,6 +196,10 @@ services:
       - RABBITMQ_PORT=${RABBITMQ_PORT}
       - RABBITMQ_USER=${RABBITMQ_ADMIN_USER}
       - RABBITMQ_PASSWORD=${RABBITMQ_ADMIN_PASSWORD}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health > /dev/null 2>&1 || exit 1"]
       interval: 15s
@@ -230,11 +240,11 @@ services:
 
   # ========== REDIS CACHE ==========
   redis:
-    image: redis:latest
+    image: redis:7.2-alpine
     container_name: CC-REDIS
     ports:
       - "6380:6379"
-    command: ["bash","-lc","redis-server --requirepass ${REDIS_PASSWORD}"]
+    command: ["redis-server","--requirepass","${REDIS_PASSWORD}"]
     restart: unless-stopped
     networks:
       - sec_net

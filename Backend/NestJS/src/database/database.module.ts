@@ -34,10 +34,10 @@ class DatabaseConnectionLogger implements OnModuleInit {
       type: 'postgres',
       host: process.env.POSTGRES_HOST || 'postgres',
       port: parseInt(process.env.POSTGRES_PORT || '5432'),
-      username: process.env.POSTGRES_USER || 'sec',
-      password: process.env.POSTGRES_PASSWORD || 'secpass',
-      database: process.env.POSTGRES_DB || 'secdb',
-      schema: 'SEC', // Use the SEC schema as defined in AdminBasicDB.sql
+      username: process.env.POSTGRES_USER || 'admin',
+      password: process.env.POSTGRES_PASSWORD || 'admin',
+      database: process.env.POSTGRES_DB || 'SEC',
+      schema: process.env.POSTGRES_SCHEMA || 'SEC',
       entities: [__dirname + '/entities/*.entity{.ts,.js}'],
       synchronize: true, // Only for development
       logging: false,
@@ -45,11 +45,17 @@ class DatabaseConnectionLogger implements OnModuleInit {
     TypeOrmModule.forFeature([UserEntity]),
     MongooseModule.forRoot(
       `mongodb://${process.env.MONGODB_HOST || 'mongodb'}:27017/${process.env.MONGODB_DB || 'secmongo'}`,
-      {
-        user: process.env.MONGODB_USER || 'secmongo',
-        pass: process.env.MONGODB_PASSWORD || 'mongopass2024',
-        authSource: process.env.MONGODB_AUTH_SOURCE || 'admin',
-      }
+      (() => {
+        const authEnabled = (process.env.MONGODB_AUTH_ENABLED || '').toLowerCase() === 'true';
+        if (authEnabled) {
+          return {
+            user: process.env.MONGODB_USER || 'admin',
+            pass: process.env.MONGODB_PASSWORD || 'admin',
+            authSource: process.env.MONGODB_AUTH_SOURCE || 'admin',
+          };
+        }
+        return {};
+      })() as any
     ),
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     RedisModule,

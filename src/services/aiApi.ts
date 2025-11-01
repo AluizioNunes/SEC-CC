@@ -17,7 +17,7 @@ export interface AssistPayload extends ChatPayload {
 const isDev = typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.DEV;
 const port = typeof window !== 'undefined' ? window.location.port : '';
 const isViteDevPort = port.startsWith('517');
-const baseURL = (isDev || isViteDevPort) ? '/api' : '/api/v1';
+const baseURL = (isDev || isViteDevPort) ? '/api' : '/api/v2';
 
 export const aiApi = axios.create({
   baseURL,

@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { Controller, Get, Module, Res, ValidationPipe, Logger } from '@nestjs/common';
+import { Controller, Get, Module, Res, ValidationPipe, Logger, Body, Post, Query } from '@nestjs/common';
 import { Response } from 'express';
 import * as client from 'prom-client';
 import { ServiceRegistrationService } from './service-registration/service-registration.service';
@@ -8,6 +8,8 @@ import { ServiceRegistrationModule } from './service-registration/service-regist
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
+import { RedisModule } from './redis/redis.module';
+import { HybridBrokerService, MessagePriority, MessageBrokerType } from './redis/hybrid-broker/hybrid-broker.service';
 
 // Security imports
 import helmet from 'helmet'
@@ -183,10 +185,160 @@ class AppController {
   }
 }
 
+// ===== AI Proxy Controller (HTTP + SSE) =====
+@Controller('api/v2/ai')
+class AiProxyController {
+  private readonly logger = new Logger(AiProxyController.name);
+  private readonly baseURL = process.env.FASTAPI_INTERNAL_URL || 'http://fastapi:8000';
+
+  private url(path: string) {
+    return `${this.baseURL}${path}`;
+  }
+
+  private async proxyJson(path: string, init: any = {}, timeoutMs = 30000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort('timeout'), timeoutMs);
+    try {
+      const r = await fetch(this.url(path), { ...init, signal: controller.signal });
+      if (!r.ok) {
+        const text = await r.text().catch(() => '');
+        this.logger.error(`${path} upstream error ${r.status} ${text?.slice(0, 200)}`);
+        return { error: 'upstream_error', status: r.status, message: text };
+      }
+      try {
+        return await r.json();
+      } catch {
+        const text = await r.text().catch(() => '');
+        return { status: 200, raw: text };
+      }
+    } catch (e: any) {
+      const isAbort = e?.name === 'AbortError' || e === 'timeout';
+      const code = isAbort ? 'timeout' : 'network_error';
+      const status = isAbort ? 504 : 502;
+      this.logger.error(`${path} proxy error: ${e?.message || e}`);
+      return { error: code, status, message: e?.message || String(e) };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  @Get('providers')
+  async providers() {
+    return this.proxyJson('/ai/providers', {}, 10000);
+  }
+
+  @Get('models')
+  async models() {
+    return this.proxyJson('/ai/models', {}, 10000);
+  }
+
+  @Post('chat')
+  async chat(@Body() body: any) {
+    return this.proxyJson(
+      '/ai/chat',
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+      60000,
+    );
+  }
+
+  @Post('assist')
+  async assist(@Body() body: any) {
+    return this.proxyJson(
+      '/ai/assist',
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+      60000,
+    );
+  }
+
+  @Get('chat/stream')
+  async chatStream(
+    @Query('role') role: string,
+    @Query('message') message: string,
+    @Query('model_id') model_id?: string,
+    @Query('user_id') user_id?: string,
+    @Query('session_id') session_id?: string,
+    @Query('conversation_id') conversation_id?: string,
+    @Res() res?: Response,
+  ) {
+    if (!res) return;
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    // Some proxies may need flushing headers explicitly
+    (res as any).flushHeaders?.();
+
+    const params = new URLSearchParams({
+      role: role || 'GERAL',
+      message: message || '',
+      model_id: model_id || 'gemini-2.5-flash-lite',
+      user_id: user_id || '',
+      session_id: session_id || '',
+      conversation_id: conversation_id || '',
+    });
+
+    const url = this.url(`/ai/chat/stream?${params.toString()}`);
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort('timeout'), 300000);
+      res.on('close', () => controller.abort('client_closed'));
+
+      const up = await fetch(url, { headers: { Accept: 'text/event-stream' }, signal: controller.signal });
+      if (!up.ok || !up.body) {
+        res.write(`event: error\ndata: upstream_status_${up.status}\n\n`);
+        return res.end();
+      }
+
+      const reader = (up.body as any).getReader?.();
+      if (reader && typeof reader.read === 'function') {
+        const decoder = new TextDecoder();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(decoder.decode(value));
+        }
+        clearTimeout(timeout);
+        return res.end();
+      }
+
+      // Fallback for environments without Web ReadableStream reader
+      // Pipe as text chunks
+      const text = await up.text();
+      res.write(text);
+      clearTimeout(timeout);
+      return res.end();
+    } catch (e: any) {
+      this.logger.error(`stream proxy error: ${e?.message || e}`);
+      res.write(`event: error\ndata: ${String(e)}\n\n`);
+      return res.end();
+    }
+  }
+}
+
+@Controller('api/v2/ai/queue')
+class AiQueueController {
+  private readonly logger = new Logger(AiQueueController.name);
+
+  constructor(private readonly broker: HybridBrokerService) {}
+
+  @Post('jobs')
+  async enqueueJob(@Body() body: any) {
+    const priorityLabel = (body?.priority || 'NORMAL').toUpperCase();
+    const brokerLabel = (body?.brokerType || 'HYBRID').toUpperCase();
+    const priority = MessagePriority[priorityLabel as keyof typeof MessagePriority] || MessagePriority.NORMAL;
+    const brokerType = MessageBrokerType[brokerLabel as keyof typeof MessageBrokerType] || MessageBrokerType.HYBRID;
+
+    const routingKey = body?.routingKey || 'ai_jobs';
+    const messageId = await this.broker.publishMessage(body, routingKey, priority, brokerType);
+    this.logger.log(`queued job ${messageId} priority=${priorityLabel} routing=${routingKey}`);
+    return { job_id: messageId, status: 'queued', routing_key: routingKey, priority: priorityLabel };
+  }
+}
+
 @Module({
   imports: [
     ServiceRegistrationModule,
     DatabaseModule,
+    RedisModule,
     WinstonModule.forRoot({
       transports: [
         new winston.transports.Console({
@@ -218,7 +370,7 @@ class AppController {
       ],
     }),
   ],
-  controllers: [AppController],
+  controllers: [AppController, AiProxyController, AiQueueController],
   providers: [ServiceRegistrationService, JwtService, ConfigService],
 })
 class AppModule {}
