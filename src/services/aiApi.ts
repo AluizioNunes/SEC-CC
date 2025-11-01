@@ -49,7 +49,7 @@ export const AIApi = {
     const q = new URLSearchParams({
       role: params.role,
       message: params.message,
-      model_id: params.model_id || 'gemini-pro',
+      model_id: params.model_id || 'gemini-2.5-flash-lite',
       user_id: params.user_id || '',
       session_id: params.session_id || '',
       conversation_id: params.conversation_id || '',

@@ -116,6 +116,12 @@ class UltraAIService:
             try:
                 genai.configure(api_key=gemini_key)
                 self.gemini_client = genai
+                # Try to dynamically discover available Gemini models
+                try:
+                    self._refresh_gemini_models()
+                except Exception as dm_err:
+                    # Non-fatal; keep static registry if discovery fails
+                    print(f"Gemini model discovery warning: {dm_err}")
             except Exception as e:
                 print(f"Gemini initialization failed: {e}")
 
@@ -145,20 +151,61 @@ class UltraAIService:
                 version="latest"
             )
 
-        # Google Gemini models
+        # Google Gemini models (include legacy and current names)
         if self.gemini_client:
+            # Legacy
             self.models["gemini-pro"] = AIModel(
                 id="gemini-pro",
                 name="Gemini Pro",
                 provider=AIProvider.GEMINI,
                 capabilities=["text", "code", "multimodal"],
-                version="latest"
+                version="legacy"
             )
             self.models["gemini-pro-vision"] = AIModel(
                 id="gemini-pro-vision",
                 name="Gemini Pro Vision",
                 provider=AIProvider.GEMINI,
                 capabilities=["text", "code", "vision"],
+                version="legacy"
+            )
+            # Current
+            self.models["gemini-1.5-flash"] = AIModel(
+                id="gemini-1.5-flash",
+                name="Gemini 1.5 Flash",
+                provider=AIProvider.GEMINI,
+                capabilities=["text", "code", "multimodal"],
+                version="latest"
+            )
+            self.models["gemini-1.5-pro"] = AIModel(
+                id="gemini-1.5-pro",
+                name="Gemini 1.5 Pro",
+                provider=AIProvider.GEMINI,
+                capabilities=["text", "code", "vision"],
+                version="latest"
+            )
+
+    def _refresh_gemini_models(self):
+        """Query Gemini API to register only supported models for generateContent."""
+        if not self.gemini_client:
+            return
+        models = self.gemini_client.list_models()
+        for m in models:
+            # Some SDK versions expose attributes differently; use getattr defensively
+            methods = getattr(m, "supported_generation_methods", []) or []
+            name = getattr(m, "name", "")
+            display = getattr(m, "display_name", name)
+            if not name:
+                continue
+            if "generateContent" not in methods:
+                continue
+            # Normalize id without the "models/" prefix
+            model_id = name.split("/")[-1]
+            # Register or update entry
+            self.models[model_id] = AIModel(
+                id=model_id,
+                name=display or model_id,
+                provider=AIProvider.GEMINI,
+                capabilities=["text", "code", "multimodal"],
                 version="latest"
             )
 
@@ -278,21 +325,86 @@ class UltraAIService:
             raise ValueError("Gemini client not initialized")
 
         try:
-            gemini_model = self.gemini_client.GenerativeModel(model.id)
+            system_instr = request.input_data.get("system_instructions")
+            gemini_model = self.gemini_client.GenerativeModel(
+                model.id,
+                system_instruction=system_instr if system_instr else None,
+            )
+            user_prompt = request.input_data.get("user_message") or json.dumps(request.input_data, ensure_ascii=False)
             response = await gemini_model.generate_content_async(
-                json.dumps(request.input_data),
+                user_prompt,
                 generation_config=self.gemini_client.types.GenerationConfig(
                     temperature=0.7,
-                    max_output_tokens=1000
+                    max_output_tokens=1000,
+                    response_mime_type="text/plain"
                 )
             )
-            result = response.text
+            # Robust result extraction across SDK versions
+            result = None
+            try:
+                # Preferred accessor
+                result = getattr(response, "text", None)
+            except Exception:
+                result = None
+            if not result:
+                try:
+                    candidates = getattr(response, "candidates", []) or []
+                    if candidates:
+                        parts = getattr(candidates[0], "content", None)
+                        # Some SDKs expose content.parts
+                        parts = getattr(parts, "parts", []) if parts else []
+                        texts = [getattr(p, "text", None) for p in parts]
+                        texts = [t for t in texts if t]
+                        result = "\n".join(texts) if texts else None
+                except Exception:
+                    result = None
+            if not result:
+                # Last resort: stringifying the whole response
+                try:
+                    result = json.dumps(getattr(response, "to_dict", lambda: {} )(), ensure_ascii=False)
+                except Exception:
+                    result = str(response)
             confidence = 0.93
             # Gemini pricing is more complex, simplified here
             cost = len(result) * 0.0000005 if result else None
             return result, confidence, cost
 
         except Exception as e:
+            # Fallback to legacy model if current model isn't available/supported
+            msg = str(e).lower()
+            try:
+                if ("404" in msg or "not found" in msg or "not supported" in msg):
+                    # Prefer a dynamically discovered model that supports generateContent
+                    fallback_id = None
+                    for mid, m in self.models.items():
+                        if m.provider == AIProvider.GEMINI and mid.startswith("gemini-1.5"):
+                            fallback_id = mid
+                            break
+                    # If no 1.5 model discovered, try "-latest" variants
+                    if not fallback_id:
+                        for candidate in ("gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-1.5-flash", "gemini-1.5-pro"):
+                            if candidate in self.models:
+                                fallback_id = candidate
+                                break
+                    # As last resort, try legacy "gemini-pro"
+                    if not fallback_id and "gemini-pro" in self.models:
+                        fallback_id = "gemini-pro"
+                    if not fallback_id:
+                        raise e
+                    gemini_model = self.gemini_client.GenerativeModel(fallback_id)
+                    response = await gemini_model.generate_content_async(
+                        json.dumps(request.input_data),
+                        generation_config=self.gemini_client.types.GenerationConfig(
+                            temperature=0.7,
+                            max_output_tokens=1000
+                        )
+                    )
+                    result = response.text
+                    confidence = 0.90
+                    cost = len(result) * 0.0000005 if result else None
+                    return result, confidence, cost
+            except Exception as fe:
+                print(f"Gemini fallback error: {fe}")
             print(f"Gemini prediction error: {e}")
             raise
 

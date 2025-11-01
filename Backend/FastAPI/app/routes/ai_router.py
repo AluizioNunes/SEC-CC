@@ -120,7 +120,7 @@ async def _save_event(conv_key: str, entry: Dict[str, Any]):
 async def chat(req: ChatRequest):
     """Atendimento geral por chat com contexto de papel (role)."""
     try:
-        model_id = req.model_id or "gemini-pro"
+        model_id = req.model_id or "gemini-2.5-flash-lite"
         instructions = _role_instructions(req.role)
         input_data: Dict[str, Any] = {
             "system_instructions": instructions,
@@ -163,7 +163,7 @@ async def chat(req: ChatRequest):
 async def assist(req: AssistRequest):
     """Assistente especializado por tópico (agenda, programação, ingressos, etc.)."""
     try:
-        model_id = req.model_id or "gemini-pro"
+        model_id = req.model_id or "gemini-2.5-flash-lite"
         role_instr = _role_instructions(req.role)
         topic = (req.topic or "geral").strip().lower()
 
@@ -236,7 +236,7 @@ async def chat_stream(
 ):
     """Streaming via SSE para respostas em tempo real."""
     try:
-        model_id = model_id or "gemini-pro"
+        model_id = model_id or "gemini-2.5-flash-lite"
         instructions = _role_instructions(role)
         input_data: Dict[str, Any] = {
             "system_instructions": instructions,
@@ -289,7 +289,7 @@ async def chat_queue(req: ChatRequest):
             "type": "chat_request",
             "role": req.role,
             "message": req.message,
-            "model_id": req.model_id or "gemini-pro",
+            "model_id": req.model_id or "gemini-2.5-flash-lite",
             "context": req.context or {},
             "user_id": req.user_id,
             "session_id": req.session_id,
@@ -322,7 +322,7 @@ async def assist_queue(req: AssistRequest):
             "role": req.role,
             "topic": (req.topic or "geral").strip().lower(),
             "message": req.message,
-            "model_id": req.model_id or "gemini-pro",
+            "model_id": req.model_id or "gemini-2.5-flash-lite",
             "context": req.context or {},
             "user_id": req.user_id,
             "session_id": req.session_id,

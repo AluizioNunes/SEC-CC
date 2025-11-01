@@ -8,14 +8,19 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
-COPY requirements.txt .
+COPY Backend/FastAPI/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
-COPY app ./app
+# Copy application code (FastAPI)
+COPY Backend/FastAPI/app ./app
 # Copy tests and pytest configuration for container runs
-COPY tests ./tests
-COPY pytest.ini ./pytest.ini
+COPY Backend/FastAPI/tests ./tests
+COPY Backend/FastAPI/pytest.ini ./pytest.ini
+
+# Copy Backend modules needed by FastAPI (AI and Redis)
+COPY Backend/__init__.py ./Backend/__init__.py
+COPY Backend/AI ./Backend/AI
+COPY Backend/Redis ./Backend/Redis
 
 EXPOSE 8000
 

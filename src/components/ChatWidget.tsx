@@ -7,15 +7,7 @@ const { Text } = Typography;
 
 type Role = 'Artista' | 'Colaborador' | 'Visitante' | 'Geral';
 
-type ProviderKey = 'gemini' | 'openai' | 'claude' | string;
-
-interface AIModelInfo {
-  id: string;
-  name: string;
-  provider: ProviderKey;
-  capabilities?: string[];
-  version?: string;
-}
+// Tipos de provedor/modelo removidos
 
 interface ChatMessage {
   from: 'user' | 'assistant';
@@ -50,10 +42,6 @@ export const ChatWidget: React.FC = () => {
   const [streaming, setStreaming] = useState(true);
   const [busy, setBusy] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
-  const [providers, setProviders] = useState<Record<string, boolean>>({});
-  const [models, setModels] = useState<AIModelInfo[]>([]);
-  const [provider, setProvider] = useState<ProviderKey>('gemini');
-  const [model, setModel] = useState<AIModelInfo | null>(null);
   const [conversationId, setConversationId] = useState<string>('');
   const [conversations, setConversations] = useState<{ id: string; title: string; createdAt: number }[]>([]);
 
@@ -86,31 +74,7 @@ export const ChatWidget: React.FC = () => {
     }
   }, [sessionId]);
 
-  // Carrega provedores/modelos e escolhe defaults (persistência por provedor)
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [prov, mods] = await Promise.all([AIApi.providers(), AIApi.models()]);
-        setProviders(prov);
-        setModels(mods as AIModelInfo[]);
-
-        const availableProviders = (['gemini', 'openai', 'claude'] as ProviderKey[]).filter(p => prov[p]);
-        const defaultProvider: ProviderKey = availableProviders[0] || (mods[0]?.provider || 'gemini');
-
-        // Persistência: recuperar modelo preferido por provedor
-        const prefKey = 'sec_model_by_provider';
-        const prefs: Record<string, string> = JSON.parse(localStorage.getItem(prefKey) || '{}');
-        const preferredModelId = prefs[defaultProvider];
-        const preferredModel = (mods as AIModelInfo[]).find(m => m.id === preferredModelId && m.provider === defaultProvider) || null;
-
-        setProvider(defaultProvider);
-        setModel(preferredModel || (mods as AIModelInfo[]).find(m => m.provider === defaultProvider) || (mods[0] || null));
-      } catch (err) {
-        console.error('Erro ao carregar provedores/modelos', err);
-      }
-    };
-    load();
-  }, []);
+  // Removidos: provedores/modelos; sempre usamos o default do backend
 
   // Persistência de conversas por conversation_id
   useEffect(() => {
@@ -135,7 +99,6 @@ export const ChatWidget: React.FC = () => {
       message: message.trim(),
       session_id: sessionId,
       conversation_id: conversationId,
-      model_id: model?.id || 'gemini-pro',
     };
 
     setMessages(prev => [...prev, { from: 'user', role, text: payload.message! }]);
@@ -202,7 +165,6 @@ export const ChatWidget: React.FC = () => {
       message: message.trim() || (kind === 'checklist' ? 'Gerar checklist' : 'Gerar FAQs'),
       session_id: sessionId,
       conversation_id: conversationId,
-      model_id: model?.id || 'gemini-pro',
       topic: kind,
     };
     setBusy(true);
@@ -255,45 +217,7 @@ export const ChatWidget: React.FC = () => {
           ]}
         />
 
-        <Space style={{ width: '100%' }}>
-          <Select
-            style={{ flex: 1 }}
-            value={provider}
-            onChange={(val) => {
-              const nextProvider = val as ProviderKey;
-              setProvider(nextProvider);
-              const prefKey = 'sec_model_by_provider';
-              const prefs: Record<string, string> = JSON.parse(localStorage.getItem(prefKey) || '{}');
-              const preferredModelId = prefs[nextProvider];
-              const nextModel = (preferredModelId ? models.find(m => m.id === preferredModelId && m.provider === nextProvider) : null) || models.find(m => m.provider === nextProvider) || null;
-              setModel(nextModel);
-            }}
-            options={Object.entries(providers)
-              .filter(([_, enabled]) => enabled)
-              .map(([key]) => ({ label: key.toUpperCase(), value: key }))}
-            placeholder="Provedor"
-          />
-          <Select
-            style={{ flex: 1 }}
-            value={model?.id}
-            onChange={(val) => {
-              const nextModel = models.find(m => m.id === val) || null;
-              setModel(nextModel);
-              if (nextModel) setProvider(nextModel.provider);
-              // Persistir preferência por provedor
-              const prefKey = 'sec_model_by_provider';
-              const prefs: Record<string, string> = JSON.parse(localStorage.getItem(prefKey) || '{}');
-              if (nextModel) {
-                prefs[nextModel.provider] = nextModel.id;
-                localStorage.setItem(prefKey, JSON.stringify(prefs));
-              }
-            }}
-            options={models
-              .filter(m => m.provider === provider)
-              .map(m => ({ label: `${m.name || m.id} (${m.version || 'latest'}) [${(m.capabilities||[]).join(', ')}]`, value: m.id }))}
-            placeholder="Modelo"
-          />
-        </Space>
+        {/* Seletores de provedor/modelo removidos; Google/Gemini é padrão */}
 
         <Space style={{ width: '100%' }}>
           <Select
@@ -376,7 +300,7 @@ export const ChatWidget: React.FC = () => {
             <Button
               type="default"
               icon={<ThunderboltOutlined />}
-              onClick={() => AIApi.queueChat({ role, message, session_id: sessionId, conversation_id: conversationId, model_id: model?.id })}
+              onClick={() => AIApi.queueChat({ role, message, session_id: sessionId, conversation_id: conversationId })}
             >
               Enfileirar
             </Button>

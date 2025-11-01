@@ -35,6 +35,7 @@ pydantic-settings==2.1.0
 # Additional utilities
 requests==2.31.0
 httpx==0.24.1
+google-generativeai>=0.7.0
 
 # Tests
 pytest==7.4.4

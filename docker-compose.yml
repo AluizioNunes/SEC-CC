@@ -109,8 +109,8 @@ services:
   # ========== FASTAPI BACKEND ==========
   fastapi:
     build:
-      context: ./Backend/FastAPI
-      dockerfile: Dockerfile
+      context: ./
+      dockerfile: Backend/FastAPI/Dockerfile
     container_name: CC-FASTAPI
     ports:
       - "8000:8000"

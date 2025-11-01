@@ -87,6 +87,9 @@ external-integrations
 Backend/**
 !Backend/FastAPI/**
 !Backend/NestJS/**
+!Backend/AI/**
+!Backend/Redis/**
+!Backend/__init__.py
 Backend/FastAPI/node_modules
 Backend/NestJS/node_modules
 Backend/**/node_modules
