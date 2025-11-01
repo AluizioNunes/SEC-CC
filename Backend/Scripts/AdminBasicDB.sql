@@ -9,13 +9,16 @@
 
 -- Reset schema para inicialização limpa (primeira execução)
 DROP SCHEMA IF EXISTS public CASCADE;
-DROP SCHEMA IF EXISTS SEC CASCADE;
-CREATE SCHEMA IF NOT EXISTS SEC AUTHORIZATION :POSTGRES_USER;
-ALTER ROLE :POSTGRES_USER SET search_path TO SEC;
-SET search_path TO SEC;
+DROP SCHEMA IF EXISTS "SEC" CASCADE;
+-- Create schema owned by the current user to avoid psql variable issues
+CREATE SCHEMA IF NOT EXISTS "SEC";
+-- Use session-level search_path; avoid ALTER ROLE to keep script idempotent
+SET search_path TO "SEC";
 
 -- Enable pgcrypto for bcrypt hashing
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- Ensure uuid-ossp exists in the SEC schema for UUID generation
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" SCHEMA "SEC";
 
 -- Remover o banco padrão 'postgres' (fora de transação)
 SELECT pg_terminate_backend(pid)
