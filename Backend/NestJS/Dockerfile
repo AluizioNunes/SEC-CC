@@ -25,6 +25,9 @@ FROM node:20-alpine AS runtime
 WORKDIR /usr/src/app
 ENV NODE_ENV=production
 
+# Ensure log directory exists for Winston file transports
+RUN mkdir -p /usr/src/app/logs
+
 # Copy only necessary files
 COPY --from=base /usr/src/app/node_modules ./node_modules
 COPY --from=base /usr/src/app/dist ./dist
