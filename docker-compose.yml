@@ -174,8 +174,18 @@ services:
     container_name: CC-NESTJS
     ports:
       - "3000:3000"
+    restart: unless-stopped
     networks:
       - sec_net
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       - PORT=${NESTJS_PORT}
       - REDIS_HOST=${REDIS_HOST}
@@ -192,6 +202,7 @@ services:
       - MONGODB_USER=${MONGODB_USER}
       - MONGODB_PASSWORD=${MONGODB_PASSWORD}
       - MONGODB_AUTH_SOURCE=${MONGODB_AUTH_SOURCE}
+      - MONGODB_AUTH_ENABLED=${MONGODB_AUTH_ENABLED}
       - RABBITMQ_HOST=${RABBITMQ_HOST}
       - RABBITMQ_PORT=${RABBITMQ_PORT}
       - RABBITMQ_USER=${RABBITMQ_ADMIN_USER}
