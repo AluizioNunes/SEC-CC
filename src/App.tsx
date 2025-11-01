@@ -29,6 +29,7 @@ import Perfil from './pages/admin/Perfil';
 import Permissoes from './pages/admin/Permissoes';
 import Auditoria from './pages/admin/Auditoria';
 import { useAuth } from './contexts/AuthContext';
+import ChatWidget from './components/ChatWidget';
 
 function AdminOnly({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -247,6 +248,7 @@ function App() {
           </PessoaFisicaProvider>
         </AuthProvider>
       </ConfigProvider>
+      <ChatWidget />
     </div>
   );
 }

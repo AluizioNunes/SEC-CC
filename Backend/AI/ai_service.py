@@ -106,10 +106,15 @@ class UltraAIService:
             except Exception as e:
                 print(f"OpenAI initialization failed: {e}")
 
-        # Google Gemini
-        if GEMINI_AVAILABLE and os.getenv("GEMINI_API_KEY"):
+        # Google Gemini (supports multiple env var names)
+        gemini_key = (
+            os.getenv("GEMINI_API_KEY")
+            or os.getenv("GOOGLE_API_KEY")
+            or os.getenv("GOOGLE_AI_API_KEY")
+        )
+        if GEMINI_AVAILABLE and gemini_key:
             try:
-                genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+                genai.configure(api_key=gemini_key)
                 self.gemini_client = genai
             except Exception as e:
                 print(f"Gemini initialization failed: {e}")

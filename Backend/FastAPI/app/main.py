@@ -64,6 +64,7 @@ from .redis import (
 
 # Import Auth router (modularized /auth endpoints)
 from .routes.auth_router import auth_router
+from .routes.ai_router import ai_router
 
 # Import service registration
 import sys
@@ -151,16 +152,38 @@ async def lifespan(app: FastAPI):
     # Startup
     print("🚀 Starting FastAPI with Ultra-Advanced Redis Integration...")
 
-    # Test Redis connection
-    redis_connected = test_redis_connection()
+    # Dev flags to skip external dependencies during local development
+    _skip_redis = os.getenv("FASTAPI_SKIP_REDIS", "0") == "1"
+    _skip_db = os.getenv("FASTAPI_SKIP_DB", "1") == "1"  # default skip DB in dev
+
+    # Test Redis connection (await the coroutine properly)
+    if _skip_redis:
+        print("⚠️  Skipping Redis connection check (FASTAPI_SKIP_REDIS=1)")
+        redis_connected = False
+    else:
+        try:
+            redis_connected = await test_redis_connection()
+        except Exception as _e:
+            print(f"❌ Redis connection check errored: {_e}")
+            redis_connected = False
+
     if not redis_connected:
-        print("❌ Redis connection failed!")
-        raise Exception("Redis connection failed")
+        # In dev, allow startup without Redis to enable local API testing
+        print("⚠️  Redis not available, continuing startup in degraded dev mode")
     else:
         print("✅ Redis connected successfully")
 
-        # Initialize Postgres connection pool for SEC CRUD
-        await init_pool()
+    # Initialize Postgres connection pool for SEC CRUD if not skipped
+    if _skip_db:
+        print("⚠️  Skipping Postgres pool initialization (FASTAPI_SKIP_DB=1)")
+    else:
+        try:
+            await init_pool()
+            print("✅ Postgres connection pool initialized")
+        except Exception as _e:
+            print(f"❌ Postgres pool initialization failed: {_e}")
+            # Do not crash in dev; continue without DB
+            pass
 
     # Initialize ultra-advanced integrations
     try:
@@ -356,6 +379,8 @@ app.include_router(redis_router)
 app.include_router(advanced_demo_router)
 # Include Auth router
 app.include_router(auth_router)
+# Include AI router
+app.include_router(ai_router)
 
 
 @app.get("/redis/test")
@@ -884,14 +909,62 @@ def row_to_dict(row) -> dict:
         "Observacao": row["Observacao"],
     }
 
+FAKE_USERS = [
+    {
+        "IdUsuario": 1,
+        "Nome": "Administrador Demo",
+        "Funcao": None,
+        "Departamento": None,
+        "Lotacao": None,
+        "Perfil": "Administrador",
+        "Permissao": "full",
+        "Email": "admin@sec.gov",
+        "Login": "admin",
+        "Senha": None,
+        "DataCadastro": datetime.now(timezone.utc).isoformat(),
+        "Cadastrante": "API",
+        "Image": None,
+        "DataUpdate": None,
+        "TipoUpdate": None,
+        "Observacao": None,
+    },
+    {
+        "IdUsuario": 2,
+        "Nome": "Usuário Demo",
+        "Funcao": None,
+        "Departamento": None,
+        "Lotacao": None,
+        "Perfil": "Usuário",
+        "Permissao": "limited",
+        "Email": "usuario@sec.gov",
+        "Login": "usuario",
+        "Senha": None,
+        "DataCadastro": datetime.now(timezone.utc).isoformat(),
+        "Cadastrante": "API",
+        "Image": None,
+        "DataUpdate": None,
+        "TipoUpdate": None,
+        "Observacao": None,
+    },
+]
+
 @usuarios_router.get("/", response_model=List[UsuarioOut])
 async def listar_usuarios():
+    # Fallback sem banco para desenvolvimento
+    if os.getenv("FASTAPI_SKIP_DB", "0") in ("1", "true", "True"):
+        return FAKE_USERS
     pool = await get_pool()
     rows = await pool.fetch('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM SEC.Usuario ORDER BY idusuario ASC')
     return [row_to_dict(r) for r in rows]
 
 @usuarios_router.get("/{id}", response_model=UsuarioOut)
 async def obter_usuario(id: int):
+    # Fallback sem banco
+    if os.getenv("FASTAPI_SKIP_DB", "0") in ("1", "true", "True"):
+        for u in FAKE_USERS:
+            if u["IdUsuario"] == id:
+                return u
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
     pool = await get_pool()
     row = await pool.fetchrow('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM SEC.Usuario WHERE idusuario=$1', id)
     if not row:
@@ -931,6 +1004,29 @@ class UsuarioUpdate(BaseModel):
 
 @usuarios_router.post("/", response_model=UsuarioOut)
 async def criar_usuario(payload: UsuarioCreate):
+    # Fallback sem banco
+    if os.getenv("FASTAPI_SKIP_DB", "0") in ("1", "true", "True"):
+        new_id = (max([u["IdUsuario"] for u in FAKE_USERS]) + 1) if FAKE_USERS else 1
+        rec = {
+            "IdUsuario": new_id,
+            "Nome": payload.Nome,
+            "Funcao": payload.Funcao,
+            "Departamento": payload.Departamento,
+            "Lotacao": payload.Lotacao,
+            "Perfil": payload.Perfil,
+            "Permissao": payload.Permissao,
+            "Email": payload.Email,
+            "Login": payload.Login or (payload.Email or payload.Nome or f"user{new_id}"),
+            "Senha": payload.Senha,
+            "DataCadastro": datetime.now(timezone.utc).isoformat(),
+            "Cadastrante": payload.Cadastrante or 'API',
+            "Image": payload.Image,
+            "DataUpdate": None,
+            "TipoUpdate": payload.TipoUpdate,
+            "Observacao": payload.Observacao,
+        }
+        FAKE_USERS.append(rec)
+        return rec
     pool = await get_pool()
     row = await pool.fetchrow(
         'INSERT INTO SEC.Usuario (nome, perfil, permissao, email, usuario, senha, datacadastro, cadastrante, imagem) VALUES ($1,$2,$3,$4,$5,$6,CURRENT_TIMESTAMP,$7,$8) RETURNING idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao"',
@@ -947,6 +1043,18 @@ async def criar_usuario(payload: UsuarioCreate):
 
 @usuarios_router.put("/{id}", response_model=UsuarioOut)
 async def atualizar_usuario(id: int, payload: UsuarioUpdate):
+    # Fallback sem banco
+    if os.getenv("FASTAPI_SKIP_DB", "0") in ("1", "true", "True"):
+        data = payload.dict(exclude_unset=True)
+        for u in FAKE_USERS:
+            if u["IdUsuario"] == id:
+                for k, v in data.items():
+                    if k in {"Nome","Funcao","Departamento","Lotacao","Perfil","Permissao","Email","Login","Senha","Cadastrante","Image","TipoUpdate","Observacao"}:
+                        u[k] = v
+                u["DataUpdate"] = datetime.now(timezone.utc).isoformat()
+                return u
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
     data = payload.dict(exclude_unset=True)
     if not data:
         raise HTTPException(status_code=400, detail="Nenhum campo para atualizar")
@@ -987,6 +1095,14 @@ async def atualizar_usuario(id: int, payload: UsuarioUpdate):
 
 @usuarios_router.delete("/{id}", response_model=OperationResult)
 async def remover_usuario(id: int):
+    # Fallback sem banco
+    if os.getenv("FASTAPI_SKIP_DB", "0") in ("1", "true", "True"):
+        for i, u in enumerate(FAKE_USERS):
+            if u["IdUsuario"] == id:
+                FAKE_USERS.pop(i)
+                return {"ok": True}
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
     # Remove via asyncpg e valida existência
     pool = await get_pool()
     row = await pool.fetchrow('DELETE FROM SEC.Usuario WHERE idusuario=$1 RETURNING idusuario', id)
@@ -1009,6 +1125,15 @@ async def alterar_senha_usuario(id: int, payload: PasswordChange):
     import bcrypt
     salt = bcrypt.gensalt(rounds=12)
     hashed = bcrypt.hashpw(payload.new_password.encode("utf-8"), salt).decode("utf-8")  # $2b$
+
+    # Fallback sem banco
+    if os.getenv("FASTAPI_SKIP_DB", "0") in ("1", "true", "True"):
+        for u in FAKE_USERS:
+            if u["IdUsuario"] == id:
+                u["Senha"] = hashed
+                u["DataUpdate"] = datetime.now(timezone.utc).isoformat()
+                return {"ok": True}
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
 
     # Atualiza senha e popula campos de auditoria
     pool = await get_pool()

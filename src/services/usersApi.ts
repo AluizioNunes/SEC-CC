@@ -51,8 +51,13 @@ export interface UsuarioUpdatePayload {
   Observacao?: string;
 }
 
+const isDev = typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.DEV;
+const port = typeof window !== 'undefined' ? window.location.port : '';
+const isViteDevPort = port.startsWith('517');
+const baseURL = (isDev || isViteDevPort) ? '/api' : '/api/v1';
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL,
   headers: { 'Content-Type': 'application/json' },
 });
 
