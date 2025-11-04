@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { UsersApi } from '../services/usersApi';
 import type { UsuarioRecord } from '../services/usersApi';
+import { PermissionsApi } from '../services/permissionsApi';
+import { useAuth } from './AuthContext';
 
 export type PermissionMatrix = {
   screens: {
@@ -50,6 +52,7 @@ export type AdminStore = {
 const AdminContext = createContext<any>(null);
 
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [store, setStore] = useState<AdminStore>(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -103,6 +106,25 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     })();
   }, []);
+
+  // Carrega permissões efetivas do backend para o usuário autenticado
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!user || !user.id || user.id === 'guest') return;
+        const resp = await PermissionsApi.getForUser(user.id);
+        // Decide qual profileId interno usar
+        const profileId = user.profile === 'admin' ? 'p-admin' : 'p-usuario';
+        const matrix = resp.matrix as PermissionMatrix; // compatível com nosso tipo
+        setStore(prev => ({
+          ...prev,
+          permissions: { ...prev.permissions, [profileId]: matrix },
+        }));
+      } catch (err) {
+        console.error('Erro ao carregar permissões do usuário', err);
+      }
+    })();
+  }, [user?.id]);
 
   // Helper para obter nome de perfil pelo id
   const resolvePerfilNome = (profileId: string): string => {

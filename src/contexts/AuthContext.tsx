@@ -5,7 +5,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  profile: 'public' | 'user' | 'admin';
+  profile: 'public' | 'user' | 'admin' | 'artista' | 'colaborador' | 'visitante';
   type?: 'PF' | 'PJ';
   status?: 'pending' | 'approved' | 'rejected' | 'suspended';
   city?: string;
@@ -17,6 +17,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   login: (identifier: string, password: string) => Promise<boolean>;
+  loginGuest: () => Promise<boolean>;
   logout: () => void;
   loading: boolean;
 }
@@ -45,6 +46,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(false);
   }, []);
 
+  const normalizeProfile = (p?: string): User['profile'] => {
+    const s = (p || '').toUpperCase();
+    if (s === 'ADMIN' || s === 'ADMINISTRADOR') return 'admin';
+    if (s === 'ARTISTA' || s === 'ARTIST') return 'artista';
+    if (s === 'COLABORADOR' || s === 'COLABORATOR') return 'colaborador';
+    if (s === 'VISITANTE' || s === 'GUEST' || s === 'PUBLICO' || s === 'PUBLIC') return 'visitante';
+    return 'user';
+  };
+
   const login = async (identifier: string, password: string): Promise<boolean> => {
     setLoading(true);
     try {
@@ -60,7 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         id: String(resp.user?.id ?? ''),
         name: String(resp.user?.name ?? ''),
         email: String(resp.user?.email ?? ''),
-        profile: (resp.user?.profile as User['profile']) ?? 'user',
+        profile: normalizeProfile(resp.user?.profile ?? ''),
         loginTime: new Date().toLocaleString('pt-BR'),
       };
 
@@ -77,6 +87,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const loginGuest = async (): Promise<boolean> => {
+    setLoading(true);
+    try {
+      const guestUser: User = {
+        id: 'guest',
+        name: 'Visitante',
+        email: null as any,
+        profile: 'visitante',
+        loginTime: new Date().toLocaleString('pt-BR'),
+      };
+      setUser(guestUser);
+      localStorage.setItem('sec-user', JSON.stringify(guestUser));
+      // Não gera tokens para visitante
+      setLoading(false);
+      return true;
+    } catch (error) {
+      console.error('Erro no login como visitante:', error);
+      setLoading(false);
+      return false;
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('sec-user');
@@ -86,7 +118,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, loginGuest, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

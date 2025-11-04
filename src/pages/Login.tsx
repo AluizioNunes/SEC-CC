@@ -33,7 +33,7 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { login } = useAuth();
+  const { login, loginGuest } = useAuth();
   const navigate = useNavigate();
   const { t } = useI18n();
 
@@ -42,7 +42,7 @@ const Login: React.FC = () => {
     setError(null);
 
     try {
-      const success = await login('admin@sec.am.gov.br', 'admin123');
+      const success = await login('admin', 'changeme123');
       if (success) {
         navigate('/dashboard');
       } else {
@@ -65,6 +65,23 @@ const Login: React.FC = () => {
         navigate('/dashboard');
       } else {
         setError('Credenciais inválidas. Verifique seu usuário/e-mail e senha.');
+      }
+    } catch (err) {
+      setError('Erro interno do servidor. Tente novamente em alguns minutos.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const success = await loginGuest();
+      if (success) {
+        navigate('/eventos'); // encaminhar visitante para conteúdo público
+      } else {
+        setError('Não foi possível entrar como visitante.');
       }
     } catch (err) {
       setError('Erro interno do servidor. Tente novamente em alguns minutos.');
@@ -200,7 +217,7 @@ const Login: React.FC = () => {
               {/* Diagnóstico e suporte */}
               <Divider style={{ margin: '16px 0' }} />
               <Row gutter={12}>
-                <Col span={12}>
+                <Col span={8}>
                   <Button
                     onClick={handleDeveloperLogin}
                     icon={<BugOutlined />}
@@ -214,7 +231,17 @@ const Login: React.FC = () => {
                     Login de Dev
                   </Button>
                 </Col>
-                <Col span={12}>
+                <Col span={8}>
+                  <Button
+                    onClick={handleGuestLogin}
+                    icon={<ArrowRightOutlined />}
+                    block
+                    style={{ height: '40px', borderRadius: '0', fontSize: '13px' }}
+                  >
+                    Login como Visitante
+                  </Button>
+                </Col>
+                <Col span={8}>
                   <Button
                     block
                     icon={<QuestionCircleOutlined />}

@@ -47,7 +47,7 @@ async def login(request: Request):
         # Buscar usuário na tabela SEC.Usuario
         pool = await get_pool()
         row = await pool.fetchrow(
-            'SELECT idusuario AS "IdUsuario", nome AS "Nome", email AS "Email", usuario AS "Login", senha AS "Senha", perfil AS "Perfil", permissao AS "Permissao" FROM SEC.Usuario WHERE usuario=$1 OR email=$1 LIMIT 1',
+            'SELECT idusuario AS "IdUsuario", nome AS "Nome", email AS "Email", usuario AS "Login", senha AS "Senha", perfil AS "Perfil", permissao AS "Permissao" FROM "SEC"."Usuario" WHERE usuario=$1 OR email=$1 LIMIT 1',
             identifier
         )
 
@@ -236,7 +236,7 @@ async def change_password(payload: ChangePasswordPayload, request: Request, curr
 
         # Se current_password foi fornecida, validar contra a senha atual
         if payload.current_password is not None:
-            row_pwd = await pool.fetchrow('SELECT senha AS "Senha" FROM SEC.Usuario WHERE idusuario=$1', user_id)
+            row_pwd = await pool.fetchrow('SELECT senha AS "Senha" FROM "SEC"."Usuario" WHERE idusuario=$1', user_id)
             if not row_pwd:
                 raise HTTPException(status_code=404, detail="Usuário não encontrado")
 
@@ -271,7 +271,7 @@ async def change_password(payload: ChangePasswordPayload, request: Request, curr
 
         # Atualizar senha e auditoria
         updated = await pool.fetchrow(
-            'UPDATE SEC.Usuario SET Senha=$1, CadastranteUpdate=$2, DataUpdate=CURRENT_TIMESTAMP WHERE idusuario=$3 RETURNING idusuario',
+            'UPDATE "SEC"."Usuario" SET Senha=$1, CadastranteUpdate=$2, DataUpdate=CURRENT_TIMESTAMP WHERE idusuario=$3 RETURNING idusuario',
             hashed,
             (payload.requested_by or 'API-PASSWORD-CHANGE'),
             user_id,

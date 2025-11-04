@@ -460,6 +460,180 @@ async def root():
     }
 
 
+# ===================== Permissões (Efetivas por Usuário) =====================
+permissoes_router = APIRouter(prefix="/permissoes", tags=["SEC - Permissoes"]) 
+
+class PermissaoItem(BaseModel):
+    nome: str
+    modulo: Optional[str] = None
+    tipo: Optional[str] = None
+
+class ActionsPermission(BaseModel):
+    view: bool = False
+    create: bool = False
+    edit: bool = False
+    delete: bool = False
+
+class ScreensMatrix(BaseModel):
+    usuarios: ActionsPermission = ActionsPermission()
+    perfil: ActionsPermission = ActionsPermission()
+    permissoes: ActionsPermission = ActionsPermission()
+
+class PermissionMatrixOut(BaseModel):
+    screens: ScreensMatrix
+
+class UserPermissionsResponse(BaseModel):
+    userId: int
+    profiles: List[Dict[str, Any]]
+    raw: List[PermissaoItem]
+    matrix: PermissionMatrixOut
+
+def _raw_to_matrix(raw: List[PermissaoItem]) -> PermissionMatrixOut:
+    # Inicializa matriz com tudo falso
+    m = {
+        "usuarios": {"view": False, "create": False, "edit": False, "delete": False},
+        "perfil": {"view": False, "create": False, "edit": False, "delete": False},
+        "permissoes": {"view": False, "create": False, "edit": False, "delete": False},
+    }
+
+    # Se ADMIN_TOTAL presente, libera tudo
+    if any((p.nome or "").upper() == "ADMIN_TOTAL" for p in raw):
+        for key in m.keys():
+            m[key] = {"view": True, "create": True, "edit": True, "delete": True}
+        return PermissionMatrixOut(screens=ScreensMatrix(
+            usuarios=ActionsPermission(**m["usuarios"]),
+            perfil=ActionsPermission(**m["perfil"]),
+            permissoes=ActionsPermission(**m["permissoes"]),
+        ))
+
+    # Mapeia permissões por módulo (Usuarios, Perfil, Permissoes)
+    for p in raw:
+        nome = (p.nome or "").upper()
+        modulo_raw = (p.modulo or "").upper()
+        tipo = (p.tipo or "").upper()
+
+        # Normalizar nomes de módulo para chaves da matriz
+        if modulo_raw in ("USUARIOS", "USUARIO"):
+            modulo = "usuarios"
+        elif modulo_raw in ("PERFIL", "PERFIS", "PROFILE"):
+            modulo = "perfil"
+        elif modulo_raw in ("PERMISSOES", "PERMISSAO", "PERMISSIONS"):
+            modulo = "permissoes"
+        else:
+            modulo = None
+
+        if modulo is None:
+            # Ignora módulos não mapeados na matriz admin
+            continue
+
+        # Tipos padrão
+        if tipo == "READ" or nome.endswith("_READ_PUBLIC"):
+            m[modulo]["view"] = True
+        elif tipo == "CREATE":
+            m[modulo]["create"] = True
+        elif tipo == "UPDATE":
+            m[modulo]["edit"] = True
+        elif tipo == "DELETE":
+            m[modulo]["delete"] = True
+        elif tipo == "ADMIN":
+            m[modulo] = {"view": True, "create": True, "edit": True, "delete": True}
+
+    # Retorna matriz
+    return PermissionMatrixOut(screens=ScreensMatrix(
+        usuarios=ActionsPermission(**m["usuarios"]),
+        perfil=ActionsPermission(**m["perfil"]),
+        permissoes=ActionsPermission(**m["permissoes"]),
+    ))
+
+@permissoes_router.get("/usuarios/{id}", response_model=UserPermissionsResponse)
+async def obter_permissoes_usuario_endpoint(id: int, current_user: Dict[str, Any] = Depends(require_auth)):
+    # Fallback sem banco para desenvolvimento
+    if os.getenv("FASTAPI_SKIP_DB", "0") in ("1", "true", "True"):
+        usr = None
+        for u in FAKE_USERS:
+            if u["IdUsuario"] == id:
+                usr = u
+                break
+        if not usr:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        # Admin: libera tudo
+        perfil_nome = (usr.get("Perfil") or "").upper()
+        raw: List[PermissaoItem] = []
+        if perfil_nome in ("ADMIN", "ADMINISTRADOR"):
+            raw = [
+                PermissaoItem(nome="ADMIN_TOTAL", modulo="Sistema", tipo="ADMIN"),
+                PermissaoItem(nome="USUARIO_CREATE", modulo="Usuarios", tipo="CREATE"),
+                PermissaoItem(nome="USUARIO_READ", modulo="Usuarios", tipo="READ"),
+                PermissaoItem(nome="USUARIO_UPDATE", modulo="Usuarios", tipo="UPDATE"),
+                PermissaoItem(nome="USUARIO_DELETE", modulo="Usuarios", tipo="DELETE"),
+            ]
+        else:
+            raw = [PermissaoItem(nome="USUARIO_READ", modulo="Usuarios", tipo="READ")]
+
+        matrix = _raw_to_matrix(raw)
+        return UserPermissionsResponse(
+            userId=id,
+            profiles=[{"id": usr.get("IdUsuario"), "name": usr.get("Perfil") or "Usuário"}],
+            raw=raw,
+            matrix=matrix,
+        )
+
+    # Com banco: agrega perfil principal + perfis adicionais
+    pool = await get_pool()
+    # Perfis do usuário (principal + adicionais)
+    perfis_rows = await pool.fetch(
+        'WITH principal AS (\n'
+        '  SELECT u.idperfilprincipal AS idperfil\n'
+        '  FROM "SEC"."Usuario" u\n'
+        '  WHERE u.idusuario=$1\n'
+        '), adicionais AS (\n'
+        '  SELECT up.idperfil\n'
+        '  FROM "SEC"."UsuarioPerfil" up\n'
+        '  WHERE up.idusuario=$1\n'
+        ')\n'
+        'SELECT p.idperfil, p.nomeperfil\n'
+        'FROM "SEC"."Perfil" p\n'
+        'JOIN (SELECT idperfil FROM principal UNION SELECT idperfil FROM adicionais) x ON x.idperfil = p.idperfil',
+        id,
+    )
+    if not perfis_rows:
+        # Usuário sem perfis; ainda retornar estrutura vazia
+        perfis = []
+    else:
+        perfis = [{"id": r["idperfil"], "name": r["nomeperfil"]} for r in perfis_rows]
+
+    # Permissões efetivas via união de perfis
+    perms_rows = await pool.fetch(
+        'WITH perfis AS (\n'
+        '  SELECT u.idperfilprincipal AS idperfil\n'
+        '  FROM "SEC"."Usuario" u\n'
+        '  WHERE u.idusuario=$1\n'
+        '  UNION\n'
+        '  SELECT up.idperfil\n'
+        '  FROM "SEC"."UsuarioPerfil" up\n'
+        '  WHERE up.idusuario=$1\n'
+        ')\n'
+        'SELECT DISTINCT pm.nomepermissao AS nome, pm.modulo AS modulo, pm.tipopermissao AS tipo\n'
+        'FROM perfis pf\n'
+        'JOIN "SEC"."PerfilPermissao" pp ON pp.idperfil = pf.idperfil\n'
+        'JOIN "SEC"."Permissao" pm ON pm.idpermissao = pp.idpermissao\n'
+        'WHERE pm.ativo = TRUE\n'
+        'ORDER BY pm.modulo, pm.tipopermissao',
+        id,
+    )
+
+    raw = [PermissaoItem(nome=r["nome"], modulo=r["modulo"], tipo=r["tipo"]) for r in perms_rows]
+    matrix = _raw_to_matrix(raw)
+
+    return UserPermissionsResponse(
+        userId=id,
+        profiles=perfis,
+        raw=raw,
+        matrix=matrix,
+    )
+
+
+
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
@@ -954,7 +1128,7 @@ async def listar_usuarios():
     if os.getenv("FASTAPI_SKIP_DB", "0") in ("1", "true", "True"):
         return FAKE_USERS
     pool = await get_pool()
-    rows = await pool.fetch('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM SEC.Usuario ORDER BY idusuario ASC')
+    rows = await pool.fetch('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM "SEC".Usuario ORDER BY idusuario ASC')
     return [row_to_dict(r) for r in rows]
 
 @usuarios_router.get("/{id}", response_model=UsuarioOut)
@@ -966,7 +1140,7 @@ async def obter_usuario(id: int):
                 return u
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     pool = await get_pool()
-    row = await pool.fetchrow('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM SEC.Usuario WHERE idusuario=$1', id)
+    row = await pool.fetchrow('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM "SEC".Usuario WHERE idusuario=$1', id)
     if not row:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     return row_to_dict(row)
@@ -1029,7 +1203,7 @@ async def criar_usuario(payload: UsuarioCreate):
         return rec
     pool = await get_pool()
     row = await pool.fetchrow(
-        'INSERT INTO SEC.Usuario (nome, perfil, permissao, email, usuario, senha, datacadastro, cadastrante, imagem) VALUES ($1,$2,$3,$4,$5,$6,CURRENT_TIMESTAMP,$7,$8) RETURNING idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao"',
+        'INSERT INTO "SEC"."Usuario" (nome, perfil, permissao, email, usuario, senha, datacadastro, cadastrante, imagem) VALUES ($1,$2,$3,$4,$5,$6,CURRENT_TIMESTAMP,$7,$8) RETURNING idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao"',
         payload.Nome,
         payload.Perfil,
         payload.Permissao,
@@ -1083,7 +1257,7 @@ async def atualizar_usuario(id: int, payload: UsuarioUpdate):
 
     pool = await get_pool()
     row = await pool.fetchrow(
-        f'UPDATE SEC.Usuario SET {set_clause} WHERE idusuario=${len(columns)+1} RETURNING idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao"',
+        f'UPDATE "SEC".Usuario SET {set_clause} WHERE idusuario=${len(columns)+1} RETURNING idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao"',
         *values,
         id,
     )
@@ -1105,7 +1279,7 @@ async def remover_usuario(id: int):
 
     # Remove via asyncpg e valida existência
     pool = await get_pool()
-    row = await pool.fetchrow('DELETE FROM SEC.Usuario WHERE idusuario=$1 RETURNING idusuario', id)
+    row = await pool.fetchrow('DELETE FROM "SEC".Usuario WHERE idusuario=$1 RETURNING idusuario', id)
     if not row:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     return {"ok": True}
@@ -1151,3 +1325,4 @@ async def alterar_senha_usuario(id: int, payload: PasswordChange):
 
 # Registrar router
 app.include_router(usuarios_router)
+app.include_router(permissoes_router)

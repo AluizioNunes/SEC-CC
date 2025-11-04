@@ -117,13 +117,15 @@ const Navbar: React.FC<NavbarProps> = ({
     if (loading) return publicMenuItems;
 
     if (user) {
-      return user.profile === 'admin' ? [
-        {
-          key: 'dashboard',
-          icon: <DashboardOutlined />,
-          label: 'DASHBOARD',
-        },
-      ] : userMenuItems;
+      if (user.profile === 'admin') {
+        return [
+          { key: 'dashboard', icon: <DashboardOutlined />, label: 'DASHBOARD' },
+        ];
+      }
+      if (user.profile === 'visitante') {
+        return publicMenuItems;
+      }
+      return userMenuItems;
     }
     return publicMenuItems;
   };
