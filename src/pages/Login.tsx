@@ -37,6 +37,23 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useI18n();
 
+  const routeAfterLogin = () => {
+    try {
+      const raw = localStorage.getItem('sec-user');
+      const parsed = raw ? JSON.parse(raw) : null;
+      const profile = (parsed?.profile ?? 'user') as string;
+      if (profile === 'admin') {
+        navigate('/admin/usuarios');
+      } else if (profile === 'visitante') {
+        navigate('/eventos');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch {
+      navigate('/dashboard');
+    }
+  };
+
   const handleDeveloperLogin = async () => {
     setLoading(true);
     setError(null);
@@ -44,7 +61,7 @@ const Login: React.FC = () => {
     try {
       const success = await login('admin', 'changeme123');
       if (success) {
-        navigate('/dashboard');
+        routeAfterLogin();
       } else {
         setError('Erro no login de desenvolvedor.');
       }
@@ -62,7 +79,7 @@ const Login: React.FC = () => {
     try {
       const success = await login(values.usuario, values.password);
       if (success) {
-        navigate('/dashboard');
+        routeAfterLogin();
       } else {
         setError('Credenciais inválidas. Verifique seu usuário/e-mail e senha.');
       }
