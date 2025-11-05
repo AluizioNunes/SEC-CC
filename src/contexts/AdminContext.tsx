@@ -61,6 +61,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return {
       users: [],
       profiles: [
+        { id: 'p-master', name: 'Master', description: 'Acesso superior ao Admin', permissions: { screens: { usuarios: { view: true, create: true, edit: true, delete: true }, perfil: { view: true, create: true, edit: true, delete: true }, permissoes: { view: true, create: true, edit: true, delete: true } } } },
         { id: 'p-admin', name: 'Administrador', description: 'Acesso total', permissions: { screens: { usuarios: { view: true, create: true, edit: true, delete: true }, perfil: { view: true, create: true, edit: true, delete: true }, permissoes: { view: true, create: true, edit: true, delete: true } } } },
         { id: 'p-usuario', name: 'Usuário', description: 'Acesso limitado', permissions: { screens: { usuarios: { view: true, create: false, edit: false, delete: false }, perfil: { view: false, create: false, edit: false, delete: false }, permissoes: { view: false, create: false, edit: false, delete: false } } } },
       ],
@@ -79,7 +80,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Mapeia UsuarioRecord (backend) -> AdminUser (frontend)
   const mapRecordToAdminUser = (rec: UsuarioRecord): AdminUser => {
-    const profileId = rec.Perfil === 'Administrador' ? 'p-admin' : rec.Perfil ? 'p-usuario' : 'p-usuario';
+    const up = (rec.Perfil || '').toUpperCase();
+    const profileId = up === 'MASTER' ? 'p-master' : up === 'ADMINISTRADOR' ? 'p-admin' : 'p-usuario';
     return {
       id: String(rec.IdUsuario),
       name: rec.Nome ?? '',
@@ -113,8 +115,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         if (!user || !user.id || user.id === 'guest') return;
         const resp = await PermissionsApi.getForUser(user.id);
-        // Decide qual profileId interno usar
-        const profileId = user.profile === 'admin' ? 'p-admin' : 'p-usuario';
+        // Decide qual profileId interno usar (MASTER tem precedência funcional)
+        const profileId = user.rawProfile === 'MASTER' ? 'p-master' : (user.profile === 'admin' ? 'p-admin' : 'p-usuario');
         const matrix = resp.matrix as PermissionMatrix; // compatível com nosso tipo
         setStore(prev => ({
           ...prev,

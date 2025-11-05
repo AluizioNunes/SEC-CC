@@ -4,12 +4,24 @@ import react from '@vitejs/plugin-react';
 // Configuração de performance: chunking e otimização de dependências
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: 'src/test/setup.ts',
+    include: ['src/__tests__/**/*.{test,spec}.{ts,tsx}'],
+    exclude: ['Backend/**', 'Services/**', 'node_modules/**']
+  },
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        // Permite escolher entre FastAPI direto (localhost:8000)
+        // ou NGINX (localhost) que encaminha para /api/v1
+        target: process.env.VITE_API_TARGET || (process.env.VITE_USE_NGINX === '1' ? 'http://localhost' : 'http://localhost:8000'),
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        rewrite: (path) =>
+          process.env.VITE_USE_NGINX === '1'
+            ? path.replace(/^\/api/, '/api/v1')
+            : path.replace(/^\/api/, ''),
       },
     },
   },

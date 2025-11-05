@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Menu, Dropdown, Avatar, Row, Col } from 'antd';
+import { Button, Menu, Dropdown, Avatar, Row, Col, Tag } from 'antd';
 import {
   UserOutlined,
   LoginOutlined,
@@ -119,6 +119,7 @@ const Navbar: React.FC<NavbarProps> = ({
     if (user) {
       if (user.profile === 'admin') {
         return [
+          { key: 'admin', icon: <DashboardOutlined />, label: 'ADMIN' },
           { key: 'dashboard', icon: <DashboardOutlined />, label: 'DASHBOARD' },
         ];
       }
@@ -311,6 +312,11 @@ const Navbar: React.FC<NavbarProps> = ({
                     }}
                   />
                   <span style={{ marginRight: 8 }}>{user.name.toUpperCase()}</span>
+                  {user.profile === 'admin' && (
+                    <Tag color={user.rawProfile === 'MASTER' ? 'magenta' : 'purple'} style={{ marginRight: 8 }}>
+                      {user.rawProfile === 'MASTER' ? 'MASTER' : 'ADMIN'}
+                    </Tag>
+                  )}
                   <DownOutlined />
                 </div>
               </Dropdown>

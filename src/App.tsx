@@ -28,6 +28,7 @@ import Usuarios from './pages/admin/Usuarios';
 import Perfil from './pages/admin/Perfil';
 import Permissoes from './pages/admin/Permissoes';
 import Auditoria from './pages/admin/Auditoria';
+import AdminHome from './pages/admin/AdminHome';
 import { useAuth } from './contexts/AuthContext';
 import ChatWidget from './components/ChatWidget';
 
@@ -39,7 +40,7 @@ function AdminOnly({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function App() {
+  function App() {
   return (
     <div style={{ backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
       <ConfigProvider locale={ptBR}>
@@ -147,6 +148,13 @@ function App() {
                     </Layout>
                   } />
                   {/* Rotas administrativas */}
+                  <Route path="/admin" element={
+                    <AdminOnly>
+                      <Layout>
+                        <AdminHome />
+                      </Layout>
+                    </AdminOnly>
+                  } />
                   <Route path="/admin/usuarios" element={
                     <AdminOnly>
                       <Layout>

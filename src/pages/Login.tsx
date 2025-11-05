@@ -43,14 +43,19 @@ const Login: React.FC = () => {
       const parsed = raw ? JSON.parse(raw) : null;
       const profile = (parsed?.profile ?? 'user') as string;
       if (profile === 'admin') {
-        navigate('/admin/usuarios');
+        navigate('/admin');
+      } else if (profile === 'colaborador') {
+        navigate('/home');
+      } else if (profile === 'artista') {
+        navigate('/dashboard');
       } else if (profile === 'visitante') {
         navigate('/eventos');
       } else {
-        navigate('/dashboard');
+        // Perfil default (user) vai para /home
+        navigate('/home');
       }
     } catch {
-      navigate('/dashboard');
+      navigate('/home');
     }
   };
 

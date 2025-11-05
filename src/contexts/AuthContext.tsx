@@ -6,6 +6,7 @@ export interface User {
   name: string;
   email: string;
   profile: 'public' | 'user' | 'admin' | 'artista' | 'colaborador' | 'visitante';
+  rawProfile?: string;
   type?: 'PF' | 'PJ';
   status?: 'pending' | 'approved' | 'rejected' | 'suspended';
   city?: string;
@@ -48,6 +49,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const normalizeProfile = (p?: string): User['profile'] => {
     const s = (p || '').toUpperCase();
+    if (s === 'MASTER') return 'admin';
     if (s === 'ADMIN' || s === 'ADMINISTRADOR') return 'admin';
     if (s === 'ARTISTA' || s === 'ARTIST') return 'artista';
     if (s === 'COLABORADOR' || s === 'COLABORATOR') return 'colaborador';
@@ -71,6 +73,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         name: String(resp.user?.name ?? ''),
         email: String(resp.user?.email ?? ''),
         profile: normalizeProfile(resp.user?.profile ?? ''),
+        rawProfile: String(resp.user?.profile ?? '').toUpperCase(),
         loginTime: new Date().toLocaleString('pt-BR'),
       };
 
@@ -95,6 +98,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         name: 'Visitante',
         email: null as any,
         profile: 'visitante',
+        rawProfile: 'VISITANTE',
         loginTime: new Date().toLocaleString('pt-BR'),
       };
       setUser(guestUser);
