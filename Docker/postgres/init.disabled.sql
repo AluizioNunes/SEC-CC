@@ -2,7 +2,7 @@
 CREATE SCHEMA IF NOT EXISTS "SEC";
 
 -- ===================== Tabela Usuarios =====================
-CREATE TABLE IF NOT EXISTS "SEC"."Usuarios" (
+CREATE TABLE IF NOT EXISTS "SEC"."Usuario" (
   "IdUsuario" BIGSERIAL PRIMARY KEY,
   "Nome" VARCHAR(255) NOT NULL,
   "Funcao" VARCHAR(255),

@@ -21,9 +21,10 @@ auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
 @auth_router.post("/login")
 async def login(request: Request):
-    """Login validando usuário/e-mail e senha na tabela SEC.Usuario.
+    """Login validando usuário/e-mail e senha (bcrypt) na tabela SEC.Usuario.
     Aceita payload JSON: { "username": string, "password": string }.
-    O campo "username" pode ser usuário (Login) ou e-mail (Email).
+    O campo "username" pode ser usuário (Usuario) ou e-mail (Email).
+    Apenas senhas com hash bcrypt ($2…) são aceitas.
     """
     try:
         try:
@@ -64,23 +65,12 @@ async def login(request: Request):
         valid_password = False
         try:
             if isinstance(stored_password, str) and stored_password.startswith("$2"):
-                # Senha armazenada como hash bcrypt - usar bcrypt.checkpw para compatibilidade
                 import bcrypt  # type: ignore
-                try:
-                    valid_password = bcrypt.checkpw(password.encode("utf-8"), stored_password.encode("utf-8"))
-                except Exception:
-                    # Fallback para passlib caso bcrypt falhe
-                    try:
-                        from ..auth import pwd_context
-                        valid_password = pwd_context.verify(password, stored_password)
-                    except Exception:
-                        valid_password = False
+                valid_password = bcrypt.checkpw(password.encode("utf-8"), stored_password.encode("utf-8"))
             else:
-                # Comparação direta (texto puro)
-                valid_password = (password == stored_password)
+                valid_password = False
         except Exception:
-            # Fallback para comparação direta se verificação falhar
-            valid_password = (password == stored_password)
+            valid_password = False
 
         if not valid_password:
             audit_log(
@@ -245,15 +235,11 @@ async def change_password(payload: ChangePasswordPayload, request: Request, curr
             try:
                 if isinstance(stored_password, str) and stored_password.startswith("$2"):
                     import bcrypt  # type: ignore
-                    try:
-                        valid_password = bcrypt.checkpw(payload.current_password.encode("utf-8"), stored_password.encode("utf-8"))
-                    except Exception:
-                        from ..auth import pwd_context
-                        valid_password = pwd_context.verify(payload.current_password, stored_password)
+                    valid_password = bcrypt.checkpw(payload.current_password.encode("utf-8"), stored_password.encode("utf-8"))
                 else:
-                    valid_password = (payload.current_password == stored_password)
+                    valid_password = False
             except Exception:
-                valid_password = (payload.current_password == stored_password)
+                valid_password = False
 
             if not valid_password:
                 audit_log(
@@ -266,7 +252,7 @@ async def change_password(payload: ChangePasswordPayload, request: Request, curr
 
         # Gerar hash bcrypt para a nova senha
         import bcrypt
-        salt = bcrypt.gensalt(rounds=12)
+        salt = bcrypt.gensalt(rounds=11)
         hashed = bcrypt.hashpw(payload.new_password.encode("utf-8"), salt).decode("utf-8")  # $2b$
 
         # Atualizar senha e auditoria

@@ -13,12 +13,12 @@
 BEGIN;
 
 -- Desabilita triggers que possam registrar auditoria com campos nulos
-ALTER TABLE SEC.Usuario DISABLE TRIGGER ALL;
+ALTER TABLE "SEC"."Usuario" DISABLE TRIGGER ALL;
 
 -- Atualiza a senha do admin e popula campos de auditoria do próprio registro
 -- Hash gerado previamente para a senha 'changeme123' ($2b$)
 -- Para alterar o valor, substitua pelo novo hash $2b$ (12 rounds recomendado)
-UPDATE SEC.Usuario
+UPDATE "SEC"."Usuario"
 SET 
   Senha = crypt(:'ADMIN_RESET_PASSWORD', gen_salt('bf', 12)),
   CadastranteUpdate = :'CADASTRANTE_SYSTEM',
@@ -26,11 +26,11 @@ SET
 WHERE Usuario = :'ADMIN_USERNAME';
 
 -- Reabilita triggers
-ALTER TABLE SEC.Usuario ENABLE TRIGGER ALL;
+ALTER TABLE "SEC"."Usuario" ENABLE TRIGGER ALL;
 
 -- Verificação pós-update
 SELECT Usuario, LENGTH(Senha) AS len, Senha
-FROM SEC.Usuario
+FROM "SEC"."Usuario"
 WHERE Usuario = 'admin';
 
 COMMIT;

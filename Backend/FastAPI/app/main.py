@@ -1128,7 +1128,7 @@ async def listar_usuarios():
     if os.getenv("FASTAPI_SKIP_DB", "0") in ("1", "true", "True"):
         return FAKE_USERS
     pool = await get_pool()
-    rows = await pool.fetch('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM "SEC".Usuario ORDER BY idusuario ASC')
+    rows = await pool.fetch('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM "SEC"."Usuario" ORDER BY idusuario ASC')
     return [row_to_dict(r) for r in rows]
 
 @usuarios_router.get("/{id}", response_model=UsuarioOut)
@@ -1140,7 +1140,7 @@ async def obter_usuario(id: int):
                 return u
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     pool = await get_pool()
-    row = await pool.fetchrow('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM "SEC".Usuario WHERE idusuario=$1', id)
+    row = await pool.fetchrow('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM "SEC"."Usuario" WHERE idusuario=$1', id)
     if not row:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     return row_to_dict(row)
@@ -1257,7 +1257,7 @@ async def atualizar_usuario(id: int, payload: UsuarioUpdate):
 
     pool = await get_pool()
     row = await pool.fetchrow(
-        f'UPDATE "SEC".Usuario SET {set_clause} WHERE idusuario=${len(columns)+1} RETURNING idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao"',
+        f'UPDATE "SEC"."Usuario" SET {set_clause} WHERE idusuario=${len(columns)+1} RETURNING idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao"',
         *values,
         id,
     )
@@ -1279,7 +1279,7 @@ async def remover_usuario(id: int):
 
     # Remove via asyncpg e valida existência
     pool = await get_pool()
-    row = await pool.fetchrow('DELETE FROM "SEC".Usuario WHERE idusuario=$1 RETURNING idusuario', id)
+    row = await pool.fetchrow('DELETE FROM "SEC"."Usuario" WHERE idusuario=$1 RETURNING idusuario', id)
     if not row:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     return {"ok": True}
@@ -1297,7 +1297,7 @@ async def alterar_senha_usuario(id: int, payload: PasswordChange):
         raise HTTPException(status_code=400, detail="Senha muito longa (limite: 72 bytes)")
 
     import bcrypt
-    salt = bcrypt.gensalt(rounds=12)
+    salt = bcrypt.gensalt(rounds=11)
     hashed = bcrypt.hashpw(payload.new_password.encode("utf-8"), salt).decode("utf-8")  # $2b$
 
     # Fallback sem banco
@@ -1312,7 +1312,7 @@ async def alterar_senha_usuario(id: int, payload: PasswordChange):
     # Atualiza senha e popula campos de auditoria
     pool = await get_pool()
     row = await pool.fetchrow(
-        'UPDATE SEC.Usuario SET Senha=$1, CadastranteUpdate=$2, DataUpdate=CURRENT_TIMESTAMP WHERE idusuario=$3 RETURNING idusuario',
+    'UPDATE "SEC"."Usuario" SET Senha=$1, CadastranteUpdate=$2, DataUpdate=CURRENT_TIMESTAMP WHERE idusuario=$3 RETURNING idusuario',
         hashed,
         (payload.requested_by or 'API-PASSWORD-CHANGE'),
         id,

@@ -75,4 +75,36 @@ export default defineConfig([
 =======
 # SEC-CC
 SEC - CADASTRO CULTURAL
+
+## Serviço Oficial de API
+
+- Serviço oficial (FastAPI): `Backend/FastAPI/app/main.py`
+- Servidor legacy desativado: `Backend/main.disabled.py` (não utilizar)
+
+### Como executar (desenvolvimento)
+
+- `uvicorn Backend.FastAPI.app.main:app --reload --port 8000`
+- Docs: `http://localhost:8000/docs`
+
+### Autenticação (padrão)
+
+- Login: `POST /auth/login` com corpo `{"username":"<usuario|email>","password":"<senha>"}`
+- Alterar senha: `POST /auth/change-password` (Bearer token obrigatória)
+
+## Migração de Senhas para bcrypt
+
+Se existirem usuários com senha em texto (não iniciando por `$2`), execute a migração:
+
+1) Script SQL: `Backend/Scripts/MigratePlaintextPasswords.sql`
+2) Wrapper PowerShell: `scripts/migrate-passwords.ps1`
+
+### Execução (PowerShell)
+
+```powershell
+./scripts/migrate-passwords.ps1 -ServiceName postgres -DbUser postgres -DbName postgres -SysActor PASSWORD-MIGRATION
+```
+
+Observações:
+- Requer extensão `pgcrypto` no PostgreSQL (`crypt`, `gen_salt('bf', 12)`).
+- Atualiza `senha` com hash bcrypt `$2b$`, e auditoria (`cadastranteupdate`, `dataupdate`).
 >>>>>>> 69ed68950b59238b97395e85f2403745102e2574

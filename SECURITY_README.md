@@ -101,7 +101,32 @@
 4. **Access the application**
    - Frontend: https://your-domain.com
    - API Docs: https://your-domain.com/docs
-   - Grafana: https://your-domain.com:3001
+- Grafana: https://your-domain.com:3001
+
+## ✅ Serviço Oficial de API
+
+- Serviço oficial (FastAPI): `Backend/FastAPI/app/main.py`
+- Servidor legacy desativado: `Backend/main.disabled.py` (não utilizar)
+
+## 🔒 Política de Senhas
+
+- Hash obrigatório com bcrypt (`$2b$`) para `SEC.Usuario.senha`.
+- Detectar senhas em texto: valores de `senha` que não iniciam por `$2`.
+- Migração segura disponível:
+  - SQL: `Backend/Scripts/MigratePlaintextPasswords.sql`
+  - PowerShell: `scripts/migrate-passwords.ps1`
+
+### Executar Migração (PowerShell)
+
+```powershell
+./scripts/migrate-passwords.ps1 -ServiceName postgres -DbUser postgres -DbName postgres -SysActor PASSWORD-MIGRATION
+```
+
+### Considerações de Segurança
+
+- Auditar alterações com `cadastranteupdate` e `dataupdate` preenchidos pelo script.
+- Recomendação: rounds `12` no `gen_salt('bf', 12)` para equilíbrio segurança/performance.
+- Garantir que a extensão `pgcrypto` esteja instalada no banco.
 
 ## 🔧 Configuration
 

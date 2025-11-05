@@ -1344,7 +1344,7 @@ BEGIN
         WHERE Usuario = p_usuario OR Email = p_usuario;
         
         -- Bloquear usuário após 5 tentativas falhas
-        UPDATE SEC.Usuario
+UPDATE "SEC"."Usuario"
         SET 
             Bloqueado = TRUE,
             DataBloqueio = CURRENT_TIMESTAMP,
