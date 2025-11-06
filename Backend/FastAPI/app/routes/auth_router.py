@@ -12,6 +12,7 @@ from ..auth import (
     require_auth,
     audit_log,
     create_access_token,
+    authenticate_user,
 )
 
 logger = logging.getLogger("sec-fastapi")
@@ -45,7 +46,48 @@ async def login(request: Request):
                 detail="Username/email e senha são obrigatórios"
             )
 
-        # Buscar usuário na tabela SEC.Usuario
+        # Fallback sem banco para desenvolvimento
+        import os
+        if os.getenv("FASTAPI_SKIP_DB", "0") in ("1", "true", "True"):
+            user = authenticate_user(identifier, password)
+            if not user:
+                audit_log(
+                    action="unauthorized_access",
+                    user_id=str(identifier),
+                    resource="auth_system",
+                    details={"reason": "user_not_found_or_invalid_password", "ip_address": request.client.host}
+                )
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
+
+            username_value = user.get("username") or str(identifier)
+            role_value = user.get("role") or "user"
+            # Em modo dev, usamos ID fixo 1
+            token_data = {"sub": "1", "username": username_value, "role": role_value}
+            access_token = create_access_token(token_data)
+            refresh_token = jwt_manager.create_refresh_token({"sub": "1", "role": role_value})
+
+            audit_log(
+                action="login",
+                user_id=username_value,
+                resource="auth_system",
+                details={"ip_address": request.client.host}
+            )
+
+            return {
+                "access_token": access_token,
+                "refresh_token": refresh_token,
+                "token_type": "bearer",
+                "expires_in": 1800,
+                "user": {
+                    "id": 1,
+                    "name": "Administrador",
+                    "email": None,
+                    "login": username_value,
+                    "profile": role_value,
+                },
+            }
+
+        # Buscar usuário na tabela SEC.Usuario (modo normal)
         pool = await get_pool()
         row = await pool.fetchrow(
             'SELECT idusuario AS "IdUsuario", nome AS "Nome", email AS "Email", usuario AS "Login", senha AS "Senha", perfil AS "Perfil", permissao AS "Permissao" FROM "SEC"."Usuario" WHERE usuario=$1 OR email=$1 LIMIT 1',
