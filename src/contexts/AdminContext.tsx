@@ -114,6 +114,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     (async () => {
       try {
         if (!user || !user.id || user.id === 'guest') return;
+        const token = typeof window !== 'undefined' ? localStorage.getItem('sec-token') : null;
+        if (!token) return; // evita chamada sem token e consequente 401
         const resp = await PermissionsApi.getForUser(user.id);
         // Decide qual profileId interno usar (MASTER tem precedência funcional)
         const profileId = user.rawProfile === 'MASTER' ? 'p-master' : (user.profile === 'admin' ? 'p-admin' : 'p-usuario');
