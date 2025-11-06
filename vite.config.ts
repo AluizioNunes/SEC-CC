@@ -4,13 +4,6 @@ import react from '@vitejs/plugin-react';
 // Configuração de performance: chunking e otimização de dependências
 export default defineConfig({
   plugins: [react()],
-  test: {
-    environment: 'jsdom',
-    globals: true,
-    setupFiles: 'src/test/setup.ts',
-    include: ['src/__tests__/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['Backend/**', 'Services/**', 'node_modules/**']
-  },
   server: {
     proxy: {
       '/api': {

@@ -39,7 +39,7 @@ class DatabaseConnectionLogger implements OnModuleInit {
       database: process.env.POSTGRES_DB || 'SEC',
       schema: process.env.POSTGRES_SCHEMA || 'SEC',
       entities: [__dirname + '/entities/*.entity{.ts,.js}'],
-      synchronize: true, // Only for development
+      synchronize: false, // Evita recriação automática de tabelas (ex.: users)
       logging: false,
     }),
     TypeOrmModule.forFeature([UserEntity]),
