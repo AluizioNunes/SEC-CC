@@ -1,0 +1,22 @@
+[
+  {
+    "user": "admin",
+    "success": 30,
+    "failures": 0
+  },
+  {
+    "user": "artista",
+    "success": 30,
+    "failures": 0
+  },
+  {
+    "user": "colab",
+    "success": 30,
+    "failures": 0
+  },
+  {
+    "user": "root",
+    "success": 30,
+    "failures": 0
+  }
+]

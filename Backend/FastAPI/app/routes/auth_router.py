@@ -5,14 +5,13 @@ import logging
 from fastapi import APIRouter, HTTPException, Request, Depends, status
 from pydantic import BaseModel
 
-from ..db_asyncpg import get_pool
+from ..db_asyncpg import get_pool, instrumented_fetchrow
 from ..auth import (
     jwt_manager,
     get_current_user,
     require_auth,
     audit_log,
     create_access_token,
-    authenticate_user,
 )
 
 logger = logging.getLogger("sec-fastapi")
@@ -46,52 +45,14 @@ async def login(request: Request):
                 detail="Username/email e senha são obrigatórios"
             )
 
-        # Fallback sem banco para desenvolvimento
-        import os
-        if os.getenv("FASTAPI_SKIP_DB", "0") in ("1", "true", "True"):
-            user = authenticate_user(identifier, password)
-            if not user:
-                audit_log(
-                    action="unauthorized_access",
-                    user_id=str(identifier),
-                    resource="auth_system",
-                    details={"reason": "user_not_found_or_invalid_password", "ip_address": request.client.host}
-                )
-                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
-
-            username_value = user.get("username") or str(identifier)
-            role_value = user.get("role") or "user"
-            # Em modo dev, usamos ID fixo 1
-            token_data = {"sub": "1", "username": username_value, "role": role_value}
-            access_token = create_access_token(token_data)
-            refresh_token = jwt_manager.create_refresh_token({"sub": "1", "role": role_value})
-
-            audit_log(
-                action="login",
-                user_id=username_value,
-                resource="auth_system",
-                details={"ip_address": request.client.host}
-            )
-
-            return {
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-                "token_type": "bearer",
-                "expires_in": 1800,
-                "user": {
-                    "id": 1,
-                    "name": "Administrador",
-                    "email": None,
-                    "login": username_value,
-                    "profile": role_value,
-                },
-            }
+        # Autenticação sempre via banco de dados
 
         # Buscar usuário na tabela SEC.Usuario (modo normal)
         pool = await get_pool()
-        row = await pool.fetchrow(
+        row = await instrumented_fetchrow(
             'SELECT idusuario AS "IdUsuario", nome AS "Nome", email AS "Email", usuario AS "Login", senha AS "Senha", perfil AS "Perfil", permissao AS "Permissao" FROM "SEC"."Usuario" WHERE usuario=$1 OR email=$1 LIMIT 1',
-            identifier
+            identifier,
+            pool=pool
         )
 
         if not row:
@@ -268,7 +229,7 @@ async def change_password(payload: ChangePasswordPayload, request: Request, curr
 
         # Se current_password foi fornecida, validar contra a senha atual
         if payload.current_password is not None:
-            row_pwd = await pool.fetchrow('SELECT senha AS "Senha" FROM "SEC"."Usuario" WHERE idusuario=$1', user_id)
+            row_pwd = await instrumented_fetchrow('SELECT senha AS "Senha" FROM "SEC"."Usuario" WHERE idusuario=$1', user_id, pool=pool)
             if not row_pwd:
                 raise HTTPException(status_code=404, detail="Usuário não encontrado")
 
@@ -298,11 +259,12 @@ async def change_password(payload: ChangePasswordPayload, request: Request, curr
         hashed = bcrypt.hashpw(payload.new_password.encode("utf-8"), salt).decode("utf-8")  # $2b$
 
         # Atualizar senha e auditoria
-        updated = await pool.fetchrow(
+        updated = await instrumented_fetchrow(
             'UPDATE "SEC"."Usuario" SET Senha=$1, CadastranteUpdate=$2, DataUpdate=CURRENT_TIMESTAMP WHERE idusuario=$3 RETURNING idusuario',
             hashed,
             (payload.requested_by or 'API-PASSWORD-CHANGE'),
             user_id,
+            pool=pool,
         )
 
         if not updated:

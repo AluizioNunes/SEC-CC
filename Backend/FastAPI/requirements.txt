@@ -28,6 +28,9 @@ opentelemetry-exporter-jaeger==1.21.0
 opentelemetry-instrumentation==0.42b0
 opentelemetry-instrumentation-fastapi==0.42b0
 
+# Prometheus metrics export
+prometheus_client==0.20.0
+
 # Validation & Serialization
 pydantic==2.9.2
 pydantic-settings==2.1.0

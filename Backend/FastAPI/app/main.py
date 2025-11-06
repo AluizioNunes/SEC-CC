@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional, List
 from fastapi import FastAPI, HTTPException, Request, Depends, status, APIRouter
 from pydantic import BaseModel
 from datetime import datetime, timezone
-from .db_asyncpg import get_pool, init_pool
+from .db_asyncpg import get_pool, init_pool, instrumented_fetch, instrumented_fetchrow
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -22,6 +22,9 @@ logger = logging.getLogger("sec-fastapi")
 # Read log level from environment (FASTAPI_LOG_LEVEL) with fallback to INFO
 _log_level = os.getenv("FASTAPI_LOG_LEVEL", "info").upper()
 logger.setLevel(getattr(logging, _log_level, logging.INFO))
+
+# Prometheus monitoring registry (api_requests_total, api_response_time, etc.)
+from .monitoring import metrics_collector
 
 # Import security modules
 from .auth import (
@@ -154,7 +157,8 @@ async def lifespan(app: FastAPI):
 
     # Dev flags to skip external dependencies during local development
     _skip_redis = os.getenv("FASTAPI_SKIP_REDIS", "0") == "1"
-    _skip_db = os.getenv("FASTAPI_SKIP_DB", "1") == "1"  # default skip DB in dev
+    # Always default to using DB; only skip if explicitly set
+    _skip_db = os.getenv("FASTAPI_SKIP_DB", "0") in ("1", "true", "True")
 
     # Test Redis connection (await the coroutine properly)
     if _skip_redis:
@@ -322,6 +326,33 @@ async def security_middleware(request: Request, call_next):
         # Log response
         logger.info(f"Request completed method={request.method} url={request.url.path} status_code={response.status_code} process_time={process_time:.3f}s")
 
+        # Record Prometheus metrics for this request
+        try:
+            metrics_collector.record_api_request(
+                endpoint=request.url.path,
+                method=request.method,
+                status_code=response.status_code,
+                response_time=process_time
+            )
+
+            # Record error counter for 4xx/5xx statuses
+            try:
+                if 400 <= int(response.status_code) < 500:
+                    metrics_collector.record_error(
+                        error_type="client_error",
+                        endpoint=request.url.path
+                    )
+                elif 500 <= int(response.status_code) < 600:
+                    metrics_collector.record_error(
+                        error_type="server_error",
+                        endpoint=request.url.path
+                    )
+            except Exception as _inner:
+                logger.debug(f"Error metric recording failed: {_inner}")
+        except Exception as _e:
+            # Avoid breaking request on metrics failure
+            logger.debug(f"Metrics recording failed: {_e}")
+
         # Add security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
@@ -334,6 +365,15 @@ async def security_middleware(request: Request, call_next):
     except Exception as e:
         # Log error with full context
         logger.error(f"Request failed method={request.method} url={request.url.path} error={e} client_ip={client_ip}")
+
+        # Record exception as error metric
+        try:
+            metrics_collector.record_error(
+                error_type="exception",
+                endpoint=request.url.path
+            )
+        except Exception as _inner_e:
+            logger.debug(f"Exception error metric recording failed: {_inner_e}")
 
         audit_log(
             action="request_error",
@@ -581,7 +621,7 @@ async def obter_permissoes_usuario_endpoint(id: int, current_user: Dict[str, Any
     # Com banco: agrega perfil principal + perfis adicionais
     pool = await get_pool()
     # Perfis do usuário (principal + adicionais)
-    perfis_rows = await pool.fetch(
+    perfis_rows = await instrumented_fetch(
         'WITH principal AS (\n'
         '  SELECT u.idperfilprincipal AS idperfil\n'
         '  FROM "SEC"."Usuario" u\n'
@@ -595,6 +635,7 @@ async def obter_permissoes_usuario_endpoint(id: int, current_user: Dict[str, Any
         'FROM "SEC"."Perfil" p\n'
         'JOIN (SELECT idperfil FROM principal UNION SELECT idperfil FROM adicionais) x ON x.idperfil = p.idperfil',
         id,
+        pool=pool,
     )
     if not perfis_rows:
         # Usuário sem perfis; ainda retornar estrutura vazia
@@ -603,7 +644,7 @@ async def obter_permissoes_usuario_endpoint(id: int, current_user: Dict[str, Any
         perfis = [{"id": r["idperfil"], "name": r["nomeperfil"]} for r in perfis_rows]
 
     # Permissões efetivas via união de perfis
-    perms_rows = await pool.fetch(
+    perms_rows = await instrumented_fetch(
         'WITH perfis AS (\n'
         '  SELECT u.idperfilprincipal AS idperfil\n'
         '  FROM "SEC"."Usuario" u\n'
@@ -620,6 +661,7 @@ async def obter_permissoes_usuario_endpoint(id: int, current_user: Dict[str, Any
         'WHERE pm.ativo = TRUE\n'
         'ORDER BY pm.modulo, pm.tipopermissao',
         id,
+        pool=pool,
     )
 
     raw = [PermissaoItem(nome=r["nome"], modulo=r["modulo"], tipo=r["tipo"]) for r in perms_rows]
@@ -721,6 +763,9 @@ async def database_health_v1():
 async def metrics():
     """Prometheus metrics endpoint"""
     try:
+        # Include counters/histograms from monitoring registry
+        registry_metrics_text = metrics_collector.get_all_metrics()
+
         # Get various metrics from different components
         cache_stats = api_cache_manager.get_cache_stats()
         session_stats = await session_cluster.get_session_stats()
@@ -845,7 +890,8 @@ async def metrics():
             "application_version{version=\"4.0.0\"} 1",
         ]
         
-        return PlainTextResponse("\n".join(metrics_data))
+        # Combine registry metrics with custom metrics
+        return PlainTextResponse(registry_metrics_text + "\n" + "\n".join(metrics_data))
     except Exception as e:
         return PlainTextResponse(f"# ERROR: {str(e)}")
 
@@ -1128,7 +1174,7 @@ async def listar_usuarios():
     if os.getenv("FASTAPI_SKIP_DB", "0") in ("1", "true", "True"):
         return FAKE_USERS
     pool = await get_pool()
-    rows = await pool.fetch('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM "SEC"."Usuario" ORDER BY idusuario ASC')
+    rows = await instrumented_fetch('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM "SEC"."Usuario" ORDER BY idusuario ASC', pool=pool)
     return [row_to_dict(r) for r in rows]
 
 @usuarios_router.get("/{id}", response_model=UsuarioOut)
@@ -1140,7 +1186,7 @@ async def obter_usuario(id: int):
                 return u
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     pool = await get_pool()
-    row = await pool.fetchrow('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM "SEC"."Usuario" WHERE idusuario=$1', id)
+    row = await instrumented_fetchrow('SELECT idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao" FROM "SEC"."Usuario" WHERE idusuario=$1', id, pool=pool)
     if not row:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     return row_to_dict(row)
@@ -1202,7 +1248,7 @@ async def criar_usuario(payload: UsuarioCreate):
         FAKE_USERS.append(rec)
         return rec
     pool = await get_pool()
-    row = await pool.fetchrow(
+    row = await instrumented_fetchrow(
         'INSERT INTO "SEC"."Usuario" (nome, perfil, permissao, email, usuario, senha, datacadastro, cadastrante, imagem) VALUES ($1,$2,$3,$4,$5,$6,CURRENT_TIMESTAMP,$7,$8) RETURNING idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao"',
         payload.Nome,
         payload.Perfil,
@@ -1212,6 +1258,7 @@ async def criar_usuario(payload: UsuarioCreate):
         payload.Senha,
         (payload.Cadastrante or 'API'),
         payload.Image,
+        pool=pool,
     )
     return row_to_dict(row)
 
@@ -1256,10 +1303,11 @@ async def atualizar_usuario(id: int, payload: UsuarioUpdate):
     values = [mapped_data[col] for col in columns]
 
     pool = await get_pool()
-    row = await pool.fetchrow(
+    row = await instrumented_fetchrow(
         f'UPDATE "SEC"."Usuario" SET {set_clause} WHERE idusuario=${len(columns)+1} RETURNING idusuario AS "IdUsuario", nome AS "Nome", NULL::text AS "Funcao", NULL::text AS "Departamento", NULL::text AS "Lotacao", perfil AS "Perfil", permissao AS "Permissao", email AS "Email", usuario AS "Login", senha AS "Senha", datacadastro AS "DataCadastro", cadastrante AS "Cadastrante", imagem AS "Image", dataupdate AS "DataUpdate", NULL::text AS "TipoUpdate", NULL::text AS "Observacao"',
         *values,
         id,
+        pool=pool,
     )
 
     if not row:
@@ -1279,7 +1327,7 @@ async def remover_usuario(id: int):
 
     # Remove via asyncpg e valida existência
     pool = await get_pool()
-    row = await pool.fetchrow('DELETE FROM "SEC"."Usuario" WHERE idusuario=$1 RETURNING idusuario', id)
+    row = await instrumented_fetchrow('DELETE FROM "SEC"."Usuario" WHERE idusuario=$1 RETURNING idusuario', id, pool=pool)
     if not row:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     return {"ok": True}
@@ -1311,11 +1359,12 @@ async def alterar_senha_usuario(id: int, payload: PasswordChange):
 
     # Atualiza senha e popula campos de auditoria
     pool = await get_pool()
-    row = await pool.fetchrow(
+    row = await instrumented_fetchrow(
     'UPDATE "SEC"."Usuario" SET Senha=$1, CadastranteUpdate=$2, DataUpdate=CURRENT_TIMESTAMP WHERE idusuario=$3 RETURNING idusuario',
         hashed,
         (payload.requested_by or 'API-PASSWORD-CHANGE'),
         id,
+        pool=pool,
     )
 
     if not row:
