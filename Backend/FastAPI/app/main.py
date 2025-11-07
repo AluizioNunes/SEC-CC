@@ -896,6 +896,15 @@ async def metrics():
         return PlainTextResponse(f"# ERROR: {str(e)}")
 
 
+@app.get("/debug/db-metric")
+async def debug_db_metric():
+    """Endpoint de smoke-test: executa uma consulta simples via wrapper instrumentado.
+    Retorna quantidade de linhas para confirmar execução e geração de métricas."""
+    pool = await get_pool()
+    rows = await instrumented_fetch('SELECT idusuario FROM "SEC"."Usuario" LIMIT 1', pool=pool)
+    return {"ok": True, "rows": len(rows)}
+
+
 @app.get("/demo")
 async def demo():
     """Ultra-advanced demo endpoint"""

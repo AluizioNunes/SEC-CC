@@ -174,6 +174,12 @@ class MetricsCollector:
 
     def record_database_query(self, query_type: str, table: str, execution_time: float):
         """Record database query metrics"""
+        # Log de confirmação da métrica de consulta ao banco
+        try:
+            logger.info("db_query_metric", query_type=query_type, table=table, execution_time=execution_time)
+        except Exception:
+            # Evitar que falha de log impeça registro da métrica
+            pass
         self.business_metrics.database_query_time.labels(
             query_type=query_type,
             table=table

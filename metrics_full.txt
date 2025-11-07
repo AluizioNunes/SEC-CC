@@ -1,0 +1,115 @@
+# HELP api_requests_total Total number of API requests
+# TYPE api_requests_total counter
+api_requests_total{endpoint="/metrics",method="GET",status_code="200"} 3.0
+# HELP api_requests_created Total number of API requests
+# TYPE api_requests_created gauge
+api_requests_created{endpoint="/metrics",method="GET",status_code="200"} 1.7624766748026044e+09
+# HELP api_response_time_seconds API response time in seconds
+# TYPE api_response_time_seconds histogram
+api_response_time_seconds_bucket{endpoint="/metrics",le="0.1",method="GET"} 3.0
+api_response_time_seconds_bucket{endpoint="/metrics",le="0.5",method="GET"} 3.0
+api_response_time_seconds_bucket{endpoint="/metrics",le="1.0",method="GET"} 3.0
+api_response_time_seconds_bucket{endpoint="/metrics",le="2.0",method="GET"} 3.0
+api_response_time_seconds_bucket{endpoint="/metrics",le="5.0",method="GET"} 3.0
+api_response_time_seconds_bucket{endpoint="/metrics",le="10.0",method="GET"} 3.0
+api_response_time_seconds_bucket{endpoint="/metrics",le="+Inf",method="GET"} 3.0
+api_response_time_seconds_count{endpoint="/metrics",method="GET"} 3.0
+api_response_time_seconds_sum{endpoint="/metrics",method="GET"} 0.0017652511596679688
+# HELP api_response_time_seconds_created API response time in seconds
+# TYPE api_response_time_seconds_created gauge
+api_response_time_seconds_created{endpoint="/metrics",method="GET"} 1.762476674802623e+09
+# HELP active_users Number of currently active users
+# TYPE active_users gauge
+active_users 150.0
+# HELP business_transactions_total Total number of business transactions
+# TYPE business_transactions_total counter
+# HELP error_rate_total Total number of errors
+# TYPE error_rate_total counter
+# HELP cache_hit_rate Cache hit rate percentage
+# TYPE cache_hit_rate gauge
+cache_hit_rate 85.5
+# HELP database_query_time_seconds Database query execution time
+# TYPE database_query_time_seconds histogram
+# HELP memory_usage_bytes Memory usage in bytes
+# TYPE memory_usage_bytes gauge
+# HELP cpu_usage_percent CPU usage percentage
+# TYPE cpu_usage_percent gauge
+
+# HELP redis_cache_hits Total number of cache hits
+# TYPE redis_cache_hits counter
+redis_cache_hits 0
+# HELP redis_cache_misses Total number of cache misses
+# TYPE redis_cache_misses counter
+redis_cache_misses 0
+# HELP redis_cache_hit_ratio Cache hit ratio
+# TYPE redis_cache_hit_ratio gauge
+redis_cache_hit_ratio 0
+# HELP active_sessions Number of active user sessions
+# TYPE active_sessions gauge
+active_sessions 0
+# HELP session_cluster_size Number of nodes in session cluster
+# TYPE session_cluster_size gauge
+session_cluster_size 1
+# HELP rate_limited_requests Number of rate limited requests
+# TYPE rate_limited_requests counter
+rate_limited_requests 0
+# HELP rate_limit_violations Number of rate limit violations
+# TYPE rate_limit_violations counter
+rate_limit_violations 0
+# HELP postgres_cache_hits PostgreSQL cache hits
+# TYPE postgres_cache_hits counter
+postgres_cache_hits 0
+# HELP postgres_cache_misses PostgreSQL cache misses
+# TYPE postgres_cache_misses counter
+postgres_cache_misses 0
+# HELP mongodb_cache_hits MongoDB cache hits
+# TYPE mongodb_cache_hits counter
+mongodb_cache_hits 0
+# HELP mongodb_cache_misses MongoDB cache misses
+# TYPE mongodb_cache_misses counter
+mongodb_cache_misses 0
+# HELP message_queue_size Current message queue size
+# TYPE message_queue_size gauge
+message_queue_size 0
+# HELP message_processing_rate Message processing rate per second
+# TYPE message_processing_rate gauge
+message_processing_rate 0
+# HELP processed_events Total number of processed events
+# TYPE processed_events counter
+processed_events 0
+# HELP event_processing_latency Event processing latency in milliseconds
+# TYPE event_processing_latency gauge
+event_processing_latency 0
+# HELP prometheus_cache_hits Prometheus cache hits
+# TYPE prometheus_cache_hits counter
+prometheus_cache_hits 0
+# HELP global_mesh_nodes Active nodes in global service mesh
+# TYPE global_mesh_nodes gauge
+global_mesh_nodes 0
+# HELP global_mesh_requests_processed Total requests processed by global mesh
+# TYPE global_mesh_requests_processed counter
+global_mesh_requests_processed 0
+# HELP ai_model_accuracy AI model accuracy percentage
+# TYPE ai_model_accuracy gauge
+ai_model_accuracy 0
+# HELP ai_predictions_made Total AI predictions made
+# TYPE ai_predictions_made counter
+ai_predictions_made 0
+# HELP security_threats_detected Total security threats detected
+# TYPE security_threats_detected counter
+security_threats_detected 0
+# HELP security_authentications Total authentication attempts
+# TYPE security_authentications counter
+security_authentications 0
+# HELP analytics_data_points_processed Total analytics data points processed
+# TYPE analytics_data_points_processed counter
+analytics_data_points_processed 0
+# HELP analytics_insights_generated Total business insights generated
+# TYPE analytics_insights_generated counter
+analytics_insights_generated 0
+# HELP application_uptime_seconds Application uptime in seconds
+# TYPE application_uptime_seconds counter
+application_uptime_seconds 1762476717
+# HELP application_version Application version
+# TYPE application_version gauge
+application_version{version="4.0.0"} 1
